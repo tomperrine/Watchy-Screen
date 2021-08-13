@@ -1,7 +1,8 @@
 #include "SyncTime.h"
 
-#include "GetLocation.h"
+#include <sntp.h>
 
+#include "GetLocation.h"
 #include "Watchy.h"
 #include "WatchyErrors.h"
 #include "time.h"
