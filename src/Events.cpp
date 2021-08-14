@@ -7,12 +7,6 @@
 
 #define ESP_ERROR_CHECK(x) do {esp_err_t __err_rc = (x); if (__err_rc != ESP_OK) { LOGE("%s %s", esp_err_to_name(__err_rc), #x); }} while (0)
 
-// Handler which executes when any event occurs
-static void any_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data)
-{
-    LOGI("any_handler %s %d args %08x data %08x", base, id, (uint32_t)handler_args, (uint32_t)event_data);
-}
-
 const char * eventIDtoString(system_event_id_t event) {
   switch (event) {
     case SYSTEM_EVENT_WIFI_READY:             return "WiFi ready";
@@ -55,68 +49,39 @@ void wiFiProvEventCb(system_event_t *sys_event, wifi_prov_event_t *prov_event) {
 
 ESP_EVENT_DEFINE_BASE(WATCHY_EVENT_BASE);
 
-QueueHandle_t xEventQueue;
-
-void IRAM_ATTR btnISR(WATCHY_EVENT_ID event) {
-  BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
-  xQueueSendFromISR(xEventQueue, (void *)&event,
-                    &xHigherPriorityTaskWokenByPost);
-  if (xHigherPriorityTaskWokenByPost) {
-    portYIELD_FROM_ISR();
+static void watchy_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data)
+{
+  LOGI("watchy_handler start %d", id);
+  switch ((WATCHY_EVENT_ID)id) {
+    case WATCHY_EVENT_MENU_BTN_DOWN: Watchy::screen->menu(); break;
+    case WATCHY_EVENT_BACK_BTN_DOWN: Watchy::screen->back(); break;
+    case WATCHY_EVENT_UP_BTN_DOWN:   Watchy::screen->up();   break;
+    case WATCHY_EVENT_DOWN_BTN_DOWN: Watchy::screen->down(); break;
+    default: break;
   }
-}
-
-void IRAM_ATTR btnMenuISR() { btnISR(WATCHY_EVENT_MENU_BTN_DOWN); }
-void IRAM_ATTR btnBackISR() { btnISR(WATCHY_EVENT_BACK_BTN_DOWN); }
-void IRAM_ATTR btnUpISR()   { btnISR(WATCHY_EVENT_UP_BTN_DOWN); }
-void IRAM_ATTR btnDownISR() { btnISR(WATCHY_EVENT_DOWN_BTN_DOWN); }
-
-void eventHandlerTask(void *pvParameters) {
-  WATCHY_EVENT_ID eventID;
-  if (xEventQueue == 0) { return; };  // error
-  while (1) {
-    eventID = WATCHY_EVENT_MAX;
-    xQueueReceive(xEventQueue, &eventID, portMAX_DELAY);
-    // Serial.print("eventHandlerTask "); Serial.println(eventID);
-    Serial.print("eventID "); Serial.println(eventID);
-    switch (eventID) {
-      case WATCHY_EVENT_MENU_BTN_DOWN: Watchy::screen->menu(); break;
-      case WATCHY_EVENT_BACK_BTN_DOWN: Watchy::screen->back(); break;
-      case WATCHY_EVENT_UP_BTN_DOWN:   Watchy::screen->up();   break;
-      case WATCHY_EVENT_DOWN_BTN_DOWN: Watchy::screen->down(); break;
-      default: break;
-    }
-  }
+  LOGI("watchy_handler end %d", id);
 }
 
 void send_event(WATCHY_EVENT_ID eventID) {
-  xQueueSend(xEventQueue, (void *)&eventID, 0);
+  esp_event_post(WATCHY_EVENT_BASE, eventID, nullptr, 0, 0);
+}
+
+static system_event_cb_t old_cb;
+
+esp_err_t system_event_cb(void *ctx, system_event_t *event) {
+  LOGI("%08x, %08x", ctx, event);
+  return old_cb(ctx, event);
 }
 
 void start_event_handler(void) {
   LOGI();
 
-  xEventQueue = xQueueCreate(10, sizeof(WATCHY_EVENT_ID));
-
-  xTaskCreate(eventHandlerTask,     /* Task function. */
-              "WatchyEventHandler", /* String with name of task. */
-              10000,                /* Stack size in words. */
-              NULL,                 /* Parameter passed as input of the task */
-              1,                    /* Priority of the task. */
-              NULL);                /* Task handle. */
-
-  send_event(WATCHY_EVENT_MAX); // DEBUG
-
-  // enable interrupts for buttons
-  attachInterrupt(MENU_BTN_PIN, &btnMenuISR, RISING);
-  attachInterrupt(BACK_BTN_PIN, &btnBackISR, RISING);
-  attachInterrupt(UP_BTN_PIN,   &btnUpISR,   RISING);
-  attachInterrupt(DOWN_BTN_PIN, &btnDownISR, RISING);
-
   // ignore returned event handler ids
   WiFi.onEvent(&wiFiProvEventCb);
 
+  old_cb = esp_event_loop_set_cb(&system_event_cb, NULL);
+
   ESP_ERROR_CHECK(esp_event_loop_create_default());
   ESP_ERROR_CHECK(esp_event_handler_register(
-      ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, any_handler, (void *)0xDEADBEEF));
+      WATCHY_EVENT_BASE, ESP_EVENT_ANY_ID, watchy_handler, nullptr));
 }
