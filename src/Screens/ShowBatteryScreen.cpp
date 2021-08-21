@@ -9,6 +9,9 @@ const int batteryReadingssz = 24 * 7;
 RTC_DATA_ATTR float batteryReadings[batteryReadingssz];
 RTC_DATA_ATTR int nextReading = 0;
 RTC_DATA_ATTR time_t lastReadingTS = 0;
+RTC_DATA_ATTR float batteryMax = -1;     // chosen so that it will be replaced by any reasonable real value
+RTC_DATA_ATTR float batteryMin = 100;    // chosen so that it will be replaced by any reasonable real value
+
 const time_t updateInterval = SECS_PER_HOUR;
 
 void OnWake(esp_sleep_wakeup_cause_t wakeup_reason) {
@@ -43,12 +46,24 @@ float mapRange(const float v, const float inMax, const float inMin,
 
 void ShowBatteryScreen::show() {
   float fgColor = (bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
+  float batteryPresent = Watchy::getBatteryVoltage();
+  
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
-  Watchy::display.printf("\nbattery %5.3fv\n", Watchy::getBatteryVoltage());
+  Watchy::display.printf("\nbattery %5.3fv\n", batteryPresent);
+  // Keep and then show the max and min
+  if (batteryPresent > batteryMax) {
+    batteryMax = batteryPresent;
+  }
+  if (batteryPresent < batteryMin) {
+    batteryMin = batteryPresent;
+  }
+  if (batteryMin > 0) {  // we have had at least one update
+      Watchy::display.printf("%5.3fv to %5.3fv\n", batteryMin, batteryMax);
+    }
   // draw the history graph
   const int16_t margin = 16;
-  const int16_t height = 120;
+  const int16_t height = 100;
   const int16_t width = batteryReadingssz;
   const int16_t x0 = margin + 1;  // left edge of graph
   const int16_t y0 = DISPLAY_HEIGHT - margin - height - 1;  // top of graph
