@@ -69,17 +69,13 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
   int16_t yPos = f->yAdvance;  ///< y position relative to top of bounding box
   bool inWord = false;
   for (char c = *t;; c = *++t) {
-    LOGD("%3d %3d %3d %3d %2d %02x %1c", w, t-origT, wordBreakXPos, xPos, charWidth(c, f), c, c);
-    if (c == '\0') {
+    LOGD("%3d %3d/%3d %3d/%3d %2d %02x %1c", w, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
+    if (c == '\0' || c == '\n') {
       // end of text
       g.setCursor(x, y+yPos);
-      for (c=*startLine;*startLine;c=*++startLine) { g.print(c); }
-      return;
-    }
-    if (c == '\n') {
-      // newline character
-      g.setCursor(x, y+yPos);
+      LOGD("%.*s", t-startLine, startLine);
       for (c=*startLine; startLine<t; c=*++startLine) { g.print(c); }
+      if (c=='\0') {return;}
       yPos += f->yAdvance;
       startLine = t+1;
       inWord = false;
@@ -89,41 +85,28 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
     uint16_t cw = charWidth(c,f);
     if (xPos+cw > w) {
       // break this line
-      if (isSpace(c)) {
-        // at a space, break here
-        g.setCursor(x, y + yPos);
-        LOGD("\"%.*s\"", t-startLine, startLine);
+      g.setCursor(x, y + yPos);
+      if (isSpace(c) || startLine == wordBreak) {
+        // break here
+        LOGD("%.*s", t-startLine, startLine);
         for (c=*startLine; startLine<t; c=*++startLine) { g.print(c); }
         // consume any remaining trailing whitespace
         while (isspace(*t) && *t != '\n') {t++;}
         if (*t == '\n') { t++; }
-        yPos += f->yAdvance;
         startLine = t;
-        xPos = cw;
-        continue;
-      } else if (startLine == wordBreak) {
-        // word doesn't fit on a line. Hard break.
-        g.setCursor(x, y + yPos);
-        LOGD("\"%.*s\"", t-startLine, startLine);
-        for (c=*startLine; startLine<t; c=*++startLine) { g.print(c); }
-        yPos += f->yAdvance;
-        // startLine = t
         wordBreak = startLine;
         xPos = cw;
-        wordBreakXPos = xPos;
-        continue;
       } else {
         // inside a word, break at start of word
-        g.setCursor(x, y + yPos);
-        LOGD("\"%.*s\"", wordBreak-startLine, startLine);
+        LOGD("%.*s", wordBreak-startLine, startLine);
         for (c=*startLine; startLine<wordBreak; c=*++startLine) { g.print(c); }
-        yPos += f->yAdvance;
         // startLine = wordBreak;
         xPos -= wordBreakXPos;
         xPos += cw;
         wordBreakXPos = 0;
-        continue;
       }
+      yPos += f->yAdvance;
+      continue;
     } else {
       // this character fits within the width
       if (yPos+charDescent(c,f) > h) { return; }
