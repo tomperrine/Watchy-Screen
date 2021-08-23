@@ -70,26 +70,27 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
   bool inWord = false;
   for (char c = *t;; c = *++t) {
     LOGD("%3d %3d/%3d %3d/%3d %2d %02x %1c", w, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
-    if (c == '\0' || c == '\n') {
-      // end of text
-      g.setCursor(x, y+yPos);
-      LOGD("%.*s", t-startLine, startLine);
-      for (c=*startLine; startLine<t; c=*++startLine) { g.print(c); }
-      if (c=='\0') {return;}
-      yPos += f->yAdvance;
-      startLine = t+1;
-      inWord = false;
-      xPos = 0;
-      continue;
-    }
     uint16_t cw = charWidth(c,f);
-    if (xPos+cw > w) {
+    if (c == '\0' || c == '\n' || xPos+cw > w) {
       // break this line
-      g.setCursor(x, y + yPos);
-      if (isSpace(c) || startLine == wordBreak) {
-        // break here
-        LOGD("%.*s", t-startLine, startLine);
-        for (c=*startLine; startLine<t; c=*++startLine) { g.print(c); }
+      if (c == '\0' || c == '\n' || startLine == wordBreak) { 
+        wordBreak = t;
+        wordBreakXPos = xPos;
+      }
+      // xPos -= wordBreakXPos;
+      g.setCursor(x, y+yPos);
+      LOGD("%.*s", wordBreak-startLine, startLine);
+      for (c=*startLine; startLine<wordBreak; c=*++startLine) { g.print(c); }
+      yPos += f->yAdvance;
+      if (c=='\0') {return;}
+      if (c == '\n') {
+        startLine++; // consume the \n
+        inWord = false;
+        xPos = 0;
+        continue;
+      }
+      // xPos += cw;
+      if (isSpace(c)) {
         // consume any remaining trailing whitespace
         while (isspace(*t) && *t != '\n') {t++;}
         if (*t == '\n') { t++; }
@@ -98,14 +99,11 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
         xPos = cw;
       } else {
         // inside a word, break at start of word
-        LOGD("%.*s", wordBreak-startLine, startLine);
-        for (c=*startLine; startLine<wordBreak; c=*++startLine) { g.print(c); }
         // startLine = wordBreak;
         xPos -= wordBreakXPos;
         xPos += cw;
         wordBreakXPos = 0;
       }
-      yPos += f->yAdvance;
       continue;
     } else {
       // this character fits within the width
