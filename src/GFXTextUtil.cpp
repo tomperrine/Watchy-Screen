@@ -3,8 +3,6 @@
 #include <Adafruit_GFX.h>
 #include <ctype.h>
 
-#include "config.h" // DEBUG
-
 /**
  * @brief when printing, how much width on the screen does this glyph require
  *
@@ -61,29 +59,31 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
   g.setFont(f);
   g.setTextWrap(false);  // clip (GFX used to have a bug that would auto-wrap on
                          // exact width)
-  const char *origT = t;
   const char *startLine = t;
   const char *wordBreak = t;
   int16_t wordBreakXPos = 0;
-  int16_t xPos = 0;  ///< x position relative to left of bounding box
+  int16_t xPos = 0;            ///< x position relative to left of bounding box
   int16_t yPos = f->yAdvance;  ///< y position relative to top of bounding box
   bool inWord = false;
   for (char c = *t;; c = *++t) {
-    LOGD("%3d %3d %3d/%3d %3d/%3d %2d %02x %1c", w, yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
-    if (c == '\0' || c == '\n') { goto hardBreak; }
-    xPos += charWidth(c,f);
+    if (c == '\0' || c == '\n') {
+      goto hardBreak; // don't blindly hate gotos.
+    }
+    xPos += charWidth(c, f);
     if (xPos <= w) {
       // this character fits within the width
-      if (yPos+charDescent(c,f) > h) { return; }
+      if (yPos + charDescent(c, f) > h) {
+        return;
+      }
       if (isSpace(c)) {
         inWord = false;
-        wordBreak = t+1;
+        wordBreak = t + 1;
         wordBreakXPos = xPos;
       } else if (!inWord) {
         // start of a new word
         inWord = true;
         wordBreak = t;
-        wordBreakXPos = xPos-charWidth(c,f);
+        wordBreakXPos = xPos - charWidth(c, f);
       }
       continue;
     }
@@ -94,24 +94,27 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
       wordBreakXPos = xPos;
     }
     xPos -= wordBreakXPos;
-    wordBreakXPos = 0; 
-    g.setCursor(x, y+yPos);
-    LOGD("%.*s", wordBreak-startLine, startLine);
-    for (c=*startLine; startLine<wordBreak; c=*++startLine) { g.print(c); }
+    wordBreakXPos = 0;
+    g.setCursor(x, y + yPos);
+    for (c = *startLine; startLine < wordBreak; c = *++startLine) {
+      g.print(c);
+    }
     yPos += f->yAdvance;
-    if (c=='\0') {return;}
+    if (c == '\0') {
+      return;
+    }
     if (isSpace(c)) {
       // consume any remaining trailing whitespace
-      for (;isspace(c) && c != '\n'; c=*++t) {
-        LOGD("   %3d %3d/%3d %3d/%3d %2d %02x %1c", yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
+      for (; isspace(c) && c != '\n'; c = *++t) {
       }
-      LOGD("   %3d %3d/%3d %3d/%3d %2d %02x %1c", yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
       startLine = t;
       xPos = 0;
       wordBreak = t;
       wordBreakXPos = 0;
-      if (c == '\n') {  c=*++startLine; } // consume the \n
+      if (c == '\n') {
+        c = *++startLine;  // consume the \n
+      }
     }
-    xPos += charWidth(c,f);
+    xPos += charWidth(c, f);
   }
 }
