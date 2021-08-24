@@ -69,7 +69,7 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
   int16_t yPos = f->yAdvance;  ///< y position relative to top of bounding box
   bool inWord = false;
   for (char c = *t;; c = *++t) {
-    LOGD("%3d %3d/%3d %3d/%3d %2d %02x %1c", w, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
+    LOGD("%3d %3d %3d/%3d %3d/%3d %2d %02x %1c", w, yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
     if (c == '\0' || c == '\n') { goto hardBreak; }
     xPos += charWidth(c,f);
     if (xPos <= w) {
@@ -100,19 +100,16 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
     for (c=*startLine; startLine<wordBreak; c=*++startLine) { g.print(c); }
     yPos += f->yAdvance;
     if (c=='\0') {return;}
-    if (c == '\n') {
-      startLine++; // consume the \n
-      inWord = false;
-      xPos = 0;
-      continue;
-    }
     if (isSpace(c)) {
       // consume any remaining trailing whitespace
-      while (isspace(*t) && *t != '\n') {t++;}
-      if (*t == '\n') { t++; }
+      for (;isspace(c) && c != '\n'; c=*++t) {
+        LOGD("   %3d %3d/%3d %3d/%3d %2d %02x %1c", yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
+      }
       startLine = t;
-      wordBreak = startLine;
       xPos = 0;
+      wordBreak = t;
+      wordBreakXPos = 0;
+      if (c == '\n') { startLine++; } // consume the \n
     }
     xPos += charWidth(c,f);
   }
