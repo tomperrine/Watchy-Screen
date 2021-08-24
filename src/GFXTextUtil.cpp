@@ -105,11 +105,12 @@ void drawWordWrappedText(Adafruit_GFX &g, int16_t x, int16_t y, int16_t w,
       for (;isspace(c) && c != '\n'; c=*++t) {
         LOGD("   %3d %3d/%3d %3d/%3d %2d %02x %1c", yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
       }
+      LOGD("   %3d %3d/%3d %3d/%3d %2d %02x %1c", yPos/f->yAdvance, t-origT, xPos, wordBreak-origT, wordBreakXPos, charWidth(c, f), c, c);
       startLine = t;
       xPos = 0;
       wordBreak = t;
       wordBreakXPos = 0;
-      if (c == '\n') { startLine++; } // consume the \n
+      if (c == '\n') {  c=*++startLine; } // consume the \n
     }
     xPos += charWidth(c,f);
   }
