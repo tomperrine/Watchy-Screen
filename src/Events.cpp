@@ -53,9 +53,11 @@ void send(ID eventID) {
  * @param p unused
  */
 void producer(void *p) {
+  uint32_t status;
   LOGD();
   while (true) {
-    switch (buttonGet()) {
+    xTaskNotifyWait(0x00, ULONG_MAX, &status, portMAX_DELAY);
+    switch ((ButtonIndex)status) {
       case menu_btn:
         send(MENU_BTN_DOWN);
         break;
@@ -74,10 +76,7 @@ void producer(void *p) {
   }
 }
 
-esp_err_t handler(void *ctx, system_event_t *event) {
-  LOGI("%d", (event ? event->event_id : -1));
-  return ESP_OK;
-}
+TaskHandle_t producerTask;
 
 void start(void) {
   LOGI();
@@ -97,10 +96,9 @@ void start(void) {
   buttonSetup(UP_BTN_PIN, up_btn);
   buttonSetup(DOWN_BTN_PIN, down_btn);
 
-  TaskHandle_t task;
   BaseType_t res = xTaskCreate(producer, "Event producer", 8192, nullptr,
-                               ESP_TASK_MAIN_PRIO, &task);
-  configASSERT(task);
+                               ESP_TASK_MAIN_PRIO, &producerTask);
+  configASSERT(producerTask);
   if (res != pdPASS) {
     LOGD("task create result %d", res);
   }

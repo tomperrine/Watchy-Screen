@@ -17,6 +17,8 @@ typedef enum {
 
 extern esp_event_loop_handle_t loop;
 
+extern TaskHandle_t producerTask;
+
 extern void start(void);
 extern void send(ID eventID);
 }  // namespace Watchy_Events
