@@ -14,12 +14,10 @@ esp_event_loop_handle_t loop;
 
 ESP_EVENT_DEFINE_BASE(BASE);
 
-static void handler(void *handler_args, esp_event_base_t base, int32_t id,
+void handler(void *handler_args, esp_event_base_t base, int32_t id,
                     void *event_data) {
   LOGI("start %d", id);
-  if (Watchy::screen == nullptr) {
-    LOGI("screen is null");
-  } else {
+  if (Watchy::screen != nullptr) {
     switch ((ID)id) {
       case MENU_BTN_DOWN:
         Watchy::screen->menu();
@@ -37,7 +35,6 @@ static void handler(void *handler_args, esp_event_base_t base, int32_t id,
         break;
     }
   }
-  LOGI("end %d", id);
 }
 
 void send(ID eventID) {
