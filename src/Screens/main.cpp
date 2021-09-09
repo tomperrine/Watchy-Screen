@@ -7,7 +7,7 @@ TimeScreen timeScreen;
 void setup() {
   LOGD();  // fail if debugging macros not defined
 
-  start_event_handler();
+  Watchy_Event::start();
 
 }
 
