@@ -18,21 +18,25 @@ CarouselScreen::CarouselScreen(CarouselItem *cis, const int8_t cs, uint16_t bg) 
 }
 
 void CarouselScreen::show() {
+  LOGI("%08x index %d", (uint32_t) this, index);
   Watchy::showWatchFace(true, items[index].splash);
 }
 
 void CarouselScreen::menu() {
+  LOGI(); 
   if (items[index].child != nullptr) {
     Watchy::setScreen(items[index].child);
   }
 }
 
 void CarouselScreen::back() {
+  LOGI(); 
   index = 0;
   show();
 }
 
 void CarouselScreen::up() {
+  LOGI(); 
   index--;
   if (index < 0) {
     index = size - 1;
@@ -41,6 +45,7 @@ void CarouselScreen::up() {
 }
 
 void CarouselScreen::down() {
+  LOGI(); 
   index++;
   if (index >= size) {
     index = 0;

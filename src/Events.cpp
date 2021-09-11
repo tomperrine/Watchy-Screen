@@ -16,7 +16,7 @@ ESP_EVENT_DEFINE_BASE(BASE);
 
 void handler(void *handler_args, esp_event_base_t base, int32_t id,
                     void *event_data) {
-  LOGI("start %d", id);
+  LOGI("handle event %d", id);
   if (Watchy::screen != nullptr) {
     switch ((ID)id) {
       case MENU_BTN_DOWN:
@@ -38,9 +38,8 @@ void handler(void *handler_args, esp_event_base_t base, int32_t id,
 }
 
 void send(ID eventID) {
-  LOGD();
-  esp_event_post_to(loop, BASE, eventID, nullptr, 0, 0);
-  LOGD();
+  LOGI("send event %d", eventID);
+  esp_event_post(BASE, eventID, nullptr, 0, 0);
 }
 
 /**
@@ -51,7 +50,6 @@ void send(ID eventID) {
  */
 void producer(void *p) {
   uint32_t status;
-  LOGD();
   while (true) {
     xTaskNotifyWait(0x00, ULONG_MAX, &status, portMAX_DELAY);
     switch ((ButtonIndex)status) {
@@ -76,16 +74,8 @@ void producer(void *p) {
 TaskHandle_t producerTask;
 
 void start(void) {
-  LOGI();
-  esp_event_loop_args_t args = {
-      .queue_size = 8,
-      .task_name = "Event dispatcher",
-      .task_priority = ESP_TASKD_EVENT_PRIO,
-      .task_stack_size = ESP_TASKD_EVENT_STACK,
-      .task_core_id = tskNO_AFFINITY,
-  };
-  ESP_ERROR_CHECK(esp_event_loop_create(&args, &loop));
-  ESP_ERROR_CHECK(esp_event_handler_register_with(loop, BASE, ESP_EVENT_ANY_ID,
+  ESP_ERROR_CHECK(esp_event_loop_create_default()); // does this interfere with elsewhere?
+  ESP_ERROR_CHECK(esp_event_handler_register(BASE, ESP_EVENT_ANY_ID,
                                                   handler, nullptr));
 
   buttonSetup(MENU_BTN_PIN, menu_btn);
@@ -93,8 +83,8 @@ void start(void) {
   buttonSetup(UP_BTN_PIN, up_btn);
   buttonSetup(DOWN_BTN_PIN, down_btn);
 
-  BaseType_t res = xTaskCreate(producer, "Event producer", 8192, nullptr,
-                               ESP_TASK_MAIN_PRIO, &producerTask);
+  BaseType_t res = xTaskCreate(producer, "Event producer", 2048, nullptr,
+                               ESP_TASKD_EVENT_PRIO, &producerTask);
   configASSERT(producerTask);
   if (res != pdPASS) {
     LOGD("task create result %d", res);

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "GetLocation.h"  // bad dependency
+#include "Events.h"
 #include "Screen.h"
 #include "WatchyErrors.h"
 
@@ -80,32 +81,16 @@ bool Watchy::pollButtonsAndDispatch()  // returns true if button was pressed
   return false;
 }
 
-void fastEventLoop() {
-  // TODO need a way for handlers to say they're done with the ui
-  const int timeout = 5000;
-  long timeoutMillis = millis() + timeout;
-  pinMode(MENU_BTN_PIN, INPUT);
-  pinMode(BACK_BTN_PIN, INPUT);
-  pinMode(UP_BTN_PIN, INPUT);
-  pinMode(DOWN_BTN_PIN, INPUT);
-  while (millis() < timeoutMillis) {
-    if (pollButtonsAndDispatch()) {
-      timeoutMillis = millis() + timeout;
-    }
-    yield();
-  }
-}
-
 void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
   switch (wakeupBit & BTN_PIN_MASK) {
-    case MENU_BTN_MASK: screen->menu(); break;
-    case BACK_BTN_MASK: screen->back(); break;
-    case UP_BTN_MASK:   screen->up();   break;
-    case DOWN_BTN_MASK: screen->down(); break;
+    case MENU_BTN_MASK: Watchy_Event::send(Watchy_Event::MENU_BTN_DOWN); break;
+    case BACK_BTN_MASK: Watchy_Event::send(Watchy_Event::BACK_BTN_DOWN); break;
+    case UP_BTN_MASK:   Watchy_Event::send(Watchy_Event::UP_BTN_DOWN);   break;
+    case DOWN_BTN_MASK: Watchy_Event::send(Watchy_Event::DOWN_BTN_DOWN); break;
     default:                            break;
   }
-  fastEventLoop();
+  // TODO: set a five second sleep timer
 }
 
 tmElements_t Watchy::currentTime; // should probably be in SyncTime
@@ -167,10 +152,11 @@ void Watchy::init() {
       showWatchFace(false);  // full update on reset
       break;
   }
-  deepSleep();
+  // deepSleep();
 }
 
 void Watchy::deepSleep() {
+  LOGI("deep sleeping");
   display.hibernate();
 #ifndef ESP_RTC
   esp_sleep_enable_ext0_wakeup(RTC_PIN,
@@ -195,7 +181,7 @@ void _rtcConfig() {
 
 void Watchy::showWatchFace(bool partialRefresh, Screen *s) {
   display.init(
-      0, false);  //_initial_refresh to false to prevent full update on init
+    0, false);  //_initial_refresh to false to prevent full update on init
   display.setFullWindow();
   display.setTextColor((s->bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE));
   display.setCursor(0,0);
