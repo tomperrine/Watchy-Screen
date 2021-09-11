@@ -12,6 +12,7 @@ typedef enum {
   BACK_BTN_DOWN,
   UP_BTN_DOWN,
   DOWN_BTN_DOWN,
+  UPDATE_SCREEN,
   MAX
 } ID;
 

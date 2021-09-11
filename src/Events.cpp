@@ -31,6 +31,9 @@ void handler(void *handler_args, esp_event_base_t base, int32_t id,
       case DOWN_BTN_DOWN:
         Watchy::screen->down();
         break;
+      case UPDATE_SCREEN:
+        Watchy::showWatchFace(true);
+        break;
       default:
         break;
     }
@@ -49,9 +52,21 @@ void send(ID eventID) {
  * @param p unused
  */
 void producer(void *p) {
+  static uint32_t lastStatus;
+  static unsigned long lastMicros;
+  const unsigned long DEBOUNCE_INTERVAL = 150000; // 150ms
   uint32_t status;
   while (true) {
-    xTaskNotifyWait(0x00, ULONG_MAX, &status, portMAX_DELAY);
+    auto v = xTaskNotifyWait(0x00, ULONG_MAX, &status, pdMS_TO_TICKS(5000));
+    if (v != pdPASS) {
+        Watchy::deepSleep(); // after 5 seconds with no events
+    }
+    if (lastStatus == status && micros() <= lastMicros+DEBOUNCE_INTERVAL) {
+      // bounce
+      continue;
+    }
+    lastStatus = status;
+    lastMicros = micros();
     switch ((ButtonIndex)status) {
       case menu_btn:
         send(MENU_BTN_DOWN);

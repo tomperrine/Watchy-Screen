@@ -10,7 +10,6 @@
 
 void IRAM_ATTR ISR_buttonPress(void *arg) {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  // xQueueSendFromISR(xQueue, (ButtonIndex *)&arg, &xHigherPriorityTaskWoken);
   xTaskNotifyFromISR(Watchy_Event::producerTask, (uint32_t)arg,
                      eSetValueWithoutOverwrite, &xHigherPriorityTaskWoken);
 

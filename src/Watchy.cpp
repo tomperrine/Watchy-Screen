@@ -139,7 +139,7 @@ void Watchy::init() {
 #endif
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
       RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
-      showWatchFace(true);       // partial updates on tick
+      Watchy_Event::send(Watchy_Event::UPDATE_SCREEN);
       break;
     case ESP_SLEEP_WAKEUP_EXT1:  // button Press
       handleButtonPress();
@@ -156,7 +156,7 @@ void Watchy::init() {
 }
 
 void Watchy::deepSleep() {
-  LOGI("deep sleeping");
+  LOGI();
   display.hibernate();
 #ifndef ESP_RTC
   esp_sleep_enable_ext0_wakeup(RTC_PIN,
