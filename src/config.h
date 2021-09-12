@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef TAG
+#define TAG "Watchy"
+#endif
+
 //pins
 #define SDA 21
 #define SCL 22
