@@ -167,7 +167,7 @@ void init() {
 }
 
 void deepSleep() {
-  log_i();
+  log_i("*** sleeping ***\n");
   display.hibernate();
 #ifndef ESP_RTC
   esp_sleep_enable_ext0_wakeup(RTC_PIN,

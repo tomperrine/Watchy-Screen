@@ -785,7 +785,7 @@ const location *getLocation() {
     return &currentLocation;
   }
   if (!Watchy::getWiFi()) {
-    log_e("connectWiFi failed");
+    log_e("getWiFi failed");
     Watchy::err = Watchy::WIFI_FAILED;
     return &currentLocation;
   }
