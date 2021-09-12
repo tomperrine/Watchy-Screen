@@ -20,6 +20,8 @@ extern esp_event_loop_handle_t loop;
 
 extern TaskHandle_t producerTask;
 
+extern TaskHandle_t beginBackgroundTask(TaskFunction_t f);
+
 extern void start(void);
-extern void send(ID eventID);
+extern void send(ID eventID, void *eventData = nullptr);
 }  // namespace Watchy_Events

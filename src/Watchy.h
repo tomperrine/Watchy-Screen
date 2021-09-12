@@ -30,6 +30,11 @@ extern void AddOnWakeCallback(const OnWakeCallback owc);
 
 bool connectWiFi();
 
+// these two keep track of references to wifi and only close it when there
+// are no more references to it
+bool getWiFi();
+void releaseWiFi();
+
 void showWatchFace(bool partialRefresh, Screen *s = screen);
 void setScreen(Screen *s);
 bool pollButtonsAndDispatch();  // returns true if button was pressed

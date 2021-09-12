@@ -337,3 +337,24 @@ bool Watchy::connectWiFi() {
   }
   return WIFI_CONFIGURED;
 }
+
+unsigned int wifiConnectionCount = 0;
+
+bool Watchy::getWiFi() {
+  if (wifiConnectionCount > 0 || connectWiFi()) {
+    if (wifiConnectionCount == 0) {
+      log_d("wifi connected");
+    }
+    wifiConnectionCount++;
+    return true;
+  }
+  return false;
+}
+
+void Watchy::releaseWiFi() {
+  wifiConnectionCount--;
+  if (wifiConnectionCount > 0) { return; }
+  log_d("wifi disconnected");
+  btStop();
+  WiFi.mode(WIFI_OFF);
+}
