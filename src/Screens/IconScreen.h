@@ -13,7 +13,7 @@ class IconScreen : public Screen {
  public:
   IconScreen(const rle *r, const char *l, const GFXfont *f, uint16_t bg = GxEPD_WHITE) : Screen(bg), rleImage(r), label(l), font(f) {}
   void show() override {
-    LOGI("%s", label);
+    log_i("%s", label);
     const uint16_t fgColor =
         (bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
     Watchy::display.setFont(font);

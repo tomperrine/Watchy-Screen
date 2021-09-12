@@ -27,7 +27,7 @@ void timeSyncCallback(struct timeval *tv) {
   settimeofday(tv, nullptr);    // set posix
   sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
   lastSyncTimeTS = tv->tv_sec;
-  LOGD("lastSyncTimeTS %ld", lastSyncTimeTS);
+  log_d("lastSyncTimeTS %ld", lastSyncTimeTS);
   xQueueSendToBack(q, nullptr, 0);
 }
 
@@ -35,7 +35,7 @@ void syncTime(const char *timezone) {
   auto start = millis();
   if (sntp_get_sync_status() != SNTP_SYNC_STATUS_RESET) {
     // SNTP busy
-    LOGI("%d", sntp_get_sync_status());
+    log_i("%d", sntp_get_sync_status());
     Watchy::err = Watchy::NOT_READY;
     return;
   }
@@ -51,7 +51,7 @@ void syncTime(const char *timezone) {
   if (!xQueueReceive(q, nullptr, pdMS_TO_TICKS(15000))) {
     Watchy::err = Watchy::TIMEOUT;
   }
-  LOGI("time sync took %ldms", millis()-start);
+  log_i("time sync took %ldms", millis()-start);
   Watchy::releaseWiFi();
 }
 }  // namespace Watchy_SyncTime

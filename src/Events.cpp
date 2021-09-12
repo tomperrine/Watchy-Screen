@@ -19,12 +19,12 @@ ESP_EVENT_DEFINE_BASE(BASE);
 std::vector<TaskFunction_t> tasks;
 
 void addBGTask(TaskFunction_t t) {
-  LOGD("%08x", reinterpret_cast<uint32_t>(t));
+  log_d("%08x", reinterpret_cast<uint32_t>(t));
   tasks.push_back(t);
 }
 
 void removeBGTask(TaskFunction_t t) {
-  LOGD("%08x", reinterpret_cast<uint32_t>(t));
+  log_d("%08x", reinterpret_cast<uint32_t>(t));
   for (auto it = tasks.begin(); it != tasks.end(); it++) {
     if (*it == t) {
       it = tasks.erase(it);
@@ -35,7 +35,7 @@ void removeBGTask(TaskFunction_t t) {
 
 void handler(void *handler_args, esp_event_base_t base, int32_t id,
              void *event_data) {
-  LOGI("handle event %d", id);
+  log_i("handle event %d", id);
   if (Watchy::screen != nullptr) {
     switch ((ID)id) {
       case MENU_BTN_DOWN:
@@ -60,7 +60,7 @@ void handler(void *handler_args, esp_event_base_t base, int32_t id,
 }
 
 void send(ID eventID, void *eventData) {
-  LOGI("send event %d %08x", eventID, (uint32_t)eventData);
+  log_i("send event %d %08x", eventID, (uint32_t)eventData);
   esp_event_post(BASE, eventID, eventData, 0, 0);
 }
 
@@ -82,7 +82,7 @@ void producer(void *p) {
         // no tasks outstanding
         Watchy::deepSleep();  // after 5 seconds with no events
       };
-      LOGI("%d tasks waiting", tasks.size());
+      log_i("%d tasks waiting", tasks.size());
       continue;
     }
     if (lastStatus == status && micros() <= lastMicros + DEBOUNCE_INTERVAL) {
@@ -124,7 +124,7 @@ TaskHandle_t beginBackgroundTask(TaskFunction_t f) {
       name, 4096, reinterpret_cast<void *>(f), tskIDLE_PRIORITY, &t, 1);
   configASSERT(t);
   if (res != pdPASS) {
-    LOGD("create background task result %d", res);
+    log_d("create background task result %d", res);
   }
   return t;
 }
@@ -146,7 +146,7 @@ void start(void) {
                                ESP_TASKD_EVENT_PRIO, &producerTask);
   configASSERT(producerTask);
   if (res != pdPASS) {
-    LOGD("task create result %d", res);
+    log_d("task create result %d", res);
   }
 }
 }  // namespace Watchy_Event

@@ -40,18 +40,3 @@ const int HARDWARE_VERSION_MAJOR = 1;
 const int HARDWARE_VERSION_MINOR = 0;
 
 #include "wifi_config.h"
-
-// debugging macros defined in DEBUG releases
-#ifdef DEBUG
-#define LOGE(...) ESP_LOGE(TAG, __VA_ARGS__)
-#define LOGW(...) ESP_LOGW(TAG, __VA_ARGS__)
-#define LOGI(...) ESP_LOGI(TAG, __VA_ARGS__)
-#define LOGD(...) ESP_LOGD(TAG, __VA_ARGS__)
-#define LOGV(...) ESP_LOGV(TAG, __VA_ARGS__)
-#else
-#define LOGE(...)
-#define LOGW(...)
-#define LOGI(...)
-#define LOGD(...)
-#define LOGV(...)
-#endif

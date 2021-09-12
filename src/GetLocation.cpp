@@ -786,7 +786,7 @@ const location *getLocation() {
     return &currentLocation;
   }
   if (!Watchy::getWiFi()) {
-    LOGE("connectWiFi failed");
+    log_e("connectWiFi failed");
     Watchy::err = Watchy::WIFI_FAILED;
     return &currentLocation;
   }
@@ -799,7 +799,7 @@ const location *getLocation() {
   // ex. 57808 - query, status, lat, lon, timezone, city
   const char *locationQueryURL = "http://ip-api.com/json?fields=57808";
   if (!http.begin(locationQueryURL)) {
-    LOGE("http.begin failed");
+    log_e("http.begin failed");
     Watchy::err = Watchy::REQUEST_FAILED;
   } else {
     int httpResponseCode = http.GET();
@@ -816,13 +816,13 @@ const location *getLocation() {
         currentLocation = loc;
         lastGetLocationTS = now();
         Watchy::err = Watchy::OK;
-        LOGI("GET took %ldms", millis() - start);
+        log_i("GET took %ldms", millis() - start);
       } else {
-        LOGE("getPosixTZForOlson failed");
+        log_e("getPosixTZForOlson failed");
         Watchy::err = Watchy::REQUEST_FAILED;
       }
     } else {
-      LOGE("http error %d", httpResponseCode);
+      log_e("http error %d", httpResponseCode);
       Watchy::err = Watchy::REQUEST_FAILED;
       // http error
     }

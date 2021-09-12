@@ -22,7 +22,7 @@ weatherData getWeather() {
   }
   if (!Watchy::connectWiFi()) {
     Watchy::err = Watchy::WIFI_FAILED;
-    LOGE("Wifi connect failed");
+    log_e("Wifi connect failed");
     // No WiFi, return RTC Temperature (this isn't actually useful...)
     uint8_t temperature = Watchy::RTC.temperature() / 4;  // celsius
     if (strcmp(TEMP_UNIT, "imperial") == 0) {
@@ -47,7 +47,7 @@ weatherData getWeather() {
            loc->lat, loc->lon, TEMP_UNIT, OPENWEATHERMAP_APIKEY);
   if (!http.begin(weatherQueryURL)) {
     Watchy::err = Watchy::REQUEST_FAILED;
-    LOGE("http.begin failed");
+    log_e("http.begin failed");
   } else {
     int httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
@@ -62,7 +62,7 @@ weatherData getWeather() {
       Watchy::err = Watchy::OK;
     } else {
       Watchy::err = Watchy::REQUEST_FAILED;
-      LOGE("http response %d", httpResponseCode);
+      log_e("http response %d", httpResponseCode);
     }
     http.end();
   }
