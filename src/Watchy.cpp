@@ -2,14 +2,14 @@
 
 #include <vector>
 
-#include "GetLocation.h"  // bad dependency
 #include "Events.h"
+#include "GetLocation.h"  // bad dependency
 #include "Screen.h"
 #include "WatchyErrors.h"
 
-using namespace Watchy;
+namespace Watchy {
 
-Error Watchy::err;
+Error err;
 
 void _rtcConfig();
 void _bmaConfig();
@@ -18,14 +18,14 @@ uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data,
 uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
                         uint16_t len);
 
-DS3232RTC Watchy::RTC(false);
-GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> Watchy::display(
+DS3232RTC RTC(false);
+GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(
     GxEPD2_154_D67(CS, DC, RESET, BUSY));
-RTC_DATA_ATTR Screen *Watchy::screen = nullptr;
+RTC_DATA_ATTR Screen *screen = nullptr;
 
-RTC_DATA_ATTR BMA423 Watchy::sensor;
-RTC_DATA_ATTR bool Watchy::WIFI_CONFIGURED;
-RTC_DATA_ATTR bool Watchy::BLE_CONFIGURED;
+RTC_DATA_ATTR BMA423 sensor;
+RTC_DATA_ATTR bool WIFI_CONFIGURED;
+RTC_DATA_ATTR bool BLE_CONFIGURED;
 
 String getValue(String data, char separator, int index) {
   int found = 0;
@@ -56,7 +56,7 @@ void debounce(uint8_t pin, int state) {
   }
 }
 
-bool Watchy::pollButtonsAndDispatch()  // returns true if button was pressed
+bool pollButtonsAndDispatch()  // returns true if button was pressed
 {
   if (digitalRead(MENU_BTN_PIN) == 1) {
     debounce(MENU_BTN_PIN, 1);
@@ -84,31 +84,40 @@ bool Watchy::pollButtonsAndDispatch()  // returns true if button was pressed
 void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
   switch (wakeupBit & BTN_PIN_MASK) {
-    case MENU_BTN_MASK: Watchy_Event::send(Watchy_Event::MENU_BTN_DOWN); break;
-    case BACK_BTN_MASK: Watchy_Event::send(Watchy_Event::BACK_BTN_DOWN); break;
-    case UP_BTN_MASK:   Watchy_Event::send(Watchy_Event::UP_BTN_DOWN);   break;
-    case DOWN_BTN_MASK: Watchy_Event::send(Watchy_Event::DOWN_BTN_DOWN); break;
-    default:                            break;
+    case MENU_BTN_MASK:
+      Watchy_Event::send(Watchy_Event::MENU_BTN_DOWN);
+      break;
+    case BACK_BTN_MASK:
+      Watchy_Event::send(Watchy_Event::BACK_BTN_DOWN);
+      break;
+    case UP_BTN_MASK:
+      Watchy_Event::send(Watchy_Event::UP_BTN_DOWN);
+      break;
+    case DOWN_BTN_MASK:
+      Watchy_Event::send(Watchy_Event::DOWN_BTN_DOWN);
+      break;
+    default:
+      break;
   }
   // TODO: set a five second sleep timer
 }
 
-tmElements_t Watchy::currentTime; // should probably be in SyncTime
+tmElements_t currentTime;  // should probably be in SyncTime
 
 // doesn't persist over deep sleep. don't care.
 std::vector<OnWakeCallback> owcVec;
 
-void Watchy::AddOnWakeCallback(const OnWakeCallback owc) {
+void AddOnWakeCallback(const OnWakeCallback owc) {
   owcVec.push_back(owc);
 }
 
-void Watchy::init() {
+void init() {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();  // get wake up reason
   Wire.begin(SDA, SCL);                          // init i2c
 
   // sync ESP32 clocks to RTC
-  if (Watchy::RTC.read(currentTime) == 0) {
+  if (RTC.read(currentTime) == 0) {
     setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
     tzset();
     time_t t = makeTime(currentTime);
@@ -117,12 +126,14 @@ void Watchy::init() {
     settimeofday(&tv, nullptr);
   }
 
-  for (auto&& owc : owcVec) { owc(wakeup_reason); }
+  for (auto &&owc : owcVec) {
+    owc(wakeup_reason);
+  }
 
   switch (wakeup_reason) {
 #ifdef ESP_RTC
     case ESP_SLEEP_WAKEUP_TIMER:  // ESP Internal RTC
-      tmElements_t Watchy::currentTime;
+      tmElements_t currentTime;
       RTC.read(currentTime);
       currentTime.Minute++;
       tmElements_t tm;
@@ -155,7 +166,7 @@ void Watchy::init() {
   // deepSleep();
 }
 
-void Watchy::deepSleep() {
+void deepSleep() {
   LOGI();
   display.hibernate();
 #ifndef ESP_RTC
@@ -179,18 +190,18 @@ void _rtcConfig() {
   RTC.alarmInterrupt(ALARM_2, true);  // enable alarm interrupt
 }
 
-void Watchy::showWatchFace(bool partialRefresh, Screen *s) {
+void showWatchFace(bool partialRefresh, Screen *s) {
   display.init(
-    0, false);  //_initial_refresh to false to prevent full update on init
+      0, false);  //_initial_refresh to false to prevent full update on init
   display.setFullWindow();
   display.setTextColor((s->bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE));
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   s->show();
   display.display(partialRefresh);  // partial refresh
 }
 
 // setScreen is used to set a new screen on the display
-void Watchy::setScreen(Screen *s) {
+void setScreen(Screen *s) {
   if (s == nullptr) {
     return;
   }
@@ -314,13 +325,14 @@ void _bmaConfig() {
   sensor.enableWakeupInterrupt();
 }
 
-bool Watchy::connectWiFi() {
+bool connectWiFi() {
 #if !defined(WIFI_SSID) || !defined(WIFI_PASSWORD)
   if (WL_CONNECT_FAILED == WiFi.begin()) {
     // WiFi not setup, you can also use hard coded credentials with
     // WiFi.begin(SSID,PASS); by defining WIFI_SSID and WIFI_PASSWORD
 #else
-  if (WL_CONNECT_FAILED == WiFi.begin() && WL_CONNECT_FAILED == WiFi.begin(WIFI_SSID,WIFI_PASSWORD)) {
+  if (WL_CONNECT_FAILED == WiFi.begin() &&
+      WL_CONNECT_FAILED == WiFi.begin(WIFI_SSID, WIFI_PASSWORD)) {
     // WiFi not setup
 #endif
     WIFI_CONFIGURED = false;
@@ -340,7 +352,7 @@ bool Watchy::connectWiFi() {
 
 unsigned int wifiConnectionCount = 0;
 
-bool Watchy::getWiFi() {
+bool getWiFi() {
   if (wifiConnectionCount > 0 || connectWiFi()) {
     if (wifiConnectionCount == 0) {
       log_d("wifi connected");
@@ -351,10 +363,13 @@ bool Watchy::getWiFi() {
   return false;
 }
 
-void Watchy::releaseWiFi() {
+void releaseWiFi() {
   wifiConnectionCount--;
-  if (wifiConnectionCount > 0) { return; }
+  if (wifiConnectionCount > 0) {
+    return;
+  }
   log_d("wifi disconnected");
   btStop();
   WiFi.mode(WIFI_OFF);
 }
+}  // namespace Watchy
