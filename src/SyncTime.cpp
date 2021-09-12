@@ -32,7 +32,6 @@ void timeSyncCallback(struct timeval *tv) {
 }
 
 void syncTime(const char *timezone) {
-  auto start = millis();
   if (sntp_get_sync_status() != SNTP_SYNC_STATUS_RESET) {
     // SNTP busy
     log_i("%d", sntp_get_sync_status());
@@ -40,9 +39,11 @@ void syncTime(const char *timezone) {
     return;
   }
   if (!Watchy::getWiFi()) {
+    log_i("getWiFi fail");
     Watchy::err = Watchy::WIFI_FAILED;
     return;
   }
+  auto start = millis();
   StaticQueue_t qb;
   q = xQueueCreateStatic(1, 0, nullptr, &qb);
   sntp_set_time_sync_notification_cb(timeSyncCallback);

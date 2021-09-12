@@ -779,7 +779,6 @@ const char *getPosixTZforOlson(const char *olson, char *buf, size_t buflen) {
 const location *getLocation() {
   // http://ip-api.com/json?fields=57792
   // {"status":"success","lat":-27.4649,"lon":153.028,"timezone":"Australia/Brisbane","query":"202.144.174.72"}
-  auto start = millis();
   if (lastGetLocationTS &&
       (now() - lastGetLocationTS < LOCATION_UPDATE_INTERVAL)) {  // too soon
     Watchy::err = Watchy::RATE_LIMITED;
@@ -791,9 +790,10 @@ const location *getLocation() {
     return &currentLocation;
   }
 
+  auto start = millis();
   // WiFi is connected Use IP-API.com API to map geo-located IP to lat/lon/etc
   HTTPClient http;
-  http.setConnectTimeout(15000);  // 15 second max timeout
+  http.setConnectTimeout(5000);  // 5 second connect timeout
   // fields is a pseudo-bitmap indicating which fields should be returned
   // ex. 57792 - query, status, lat, lon, timezone
   // ex. 57808 - query, status, lat, lon, timezone, city
@@ -816,7 +816,6 @@ const location *getLocation() {
         currentLocation = loc;
         lastGetLocationTS = now();
         Watchy::err = Watchy::OK;
-        log_i("GET took %ldms", millis() - start);
       } else {
         log_e("getPosixTZForOlson failed");
         Watchy::err = Watchy::REQUEST_FAILED;
@@ -828,6 +827,7 @@ const location *getLocation() {
     }
     http.end();
   }
+  log_i("getLocation took %ldms", millis() - start);
   Watchy::releaseWiFi();
   return &currentLocation;
 }

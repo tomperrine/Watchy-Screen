@@ -325,7 +325,19 @@ void _bmaConfig() {
   sensor.enableWakeupInterrupt();
 }
 
+RTC_DATA_ATTR bool wifiReset;
+auto wifiMutex = xSemaphoreCreateMutex();
+
 bool connectWiFi() {
+  // in theory this is re-entrant, but in practice if you call WiFi.begin()
+  // while it's still trying to connect, it will return an error. Better
+  // to serialize WiFi.begin()
+  xSemaphoreTake(wifiMutex, portMAX_DELAY);
+  if (!wifiReset) {
+    wifi_init_config_t wifi_config = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&wifi_config);
+    wifiReset = true;
+  }
 #if !defined(WIFI_SSID) || !defined(WIFI_PASSWORD)
   if (WL_CONNECT_FAILED == WiFi.begin()) {
     // WiFi not setup, you can also use hard coded credentials with
@@ -347,6 +359,7 @@ bool connectWiFi() {
       btStop();
     }
   }
+  xSemaphoreGive(wifiMutex);
   return WIFI_CONFIGURED;
 }
 
