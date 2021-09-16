@@ -22,6 +22,9 @@ extern TaskHandle_t producerTask;
 
 extern TaskHandle_t beginBackgroundTask(TaskFunction_t f);
 
+const uint32_t DEFAULT_UPDATE_INTERVAL = 60000; // default is every minute
+extern void setUpdateInterval(uint32_t ms);
+
 extern void start(void);
 extern void send(ID eventID, void *eventData = nullptr);
 }  // namespace Watchy_Events

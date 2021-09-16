@@ -33,6 +33,59 @@ void removeBGTask(TaskFunction_t t) {
   }
 }
 
+void setUpdateInterval(uint32_t ms) {
+#ifdef ESP_RTC
+  esp_sleep_enable_timer_wakeup(ms * 1000);
+#else
+  bool alarm1 = false;
+  bool alarm2 = false;
+  if (ms == 60000) {
+    Watchy::RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0);
+    alarm2 = true;
+  } else if (ms == 1000) {
+    Watchy::RTC.setAlarm(ALM1_EVERY_SECOND, 0, 0, 0, 0);
+    alarm1 = true;
+  } else if (ms % 1000 != 0 || ms >= SECS_PER_DAY * 1000) {
+    esp_sleep_enable_timer_wakeup(ms * 1000);
+  } else if (ms > 0) {
+    ms /= 1000;
+    byte secs = ms % 60;
+    ms /= 60;
+    byte mins = ms % 60;
+    ms /= 60;
+    byte hours = ms % 24;
+    byte days = ms / 24;
+    ALARM_TYPES_t alarmType;
+    if (secs != 0) {
+      // has to be alarm 1 if it has secs
+      if (days != 0) {
+        alarmType = ALM1_MATCH_DAY;
+      } else if (hours != 0) {
+        alarmType = ALM1_MATCH_HOURS;
+      } else if (mins != 0) {
+        alarmType = ALM1_MATCH_MINUTES;
+      } else {
+        alarmType = ALM1_MATCH_SECONDS;
+      }
+      alarm1 = true;
+    } else {
+      // no secs, can be alarm 2
+      if (days != 0) {
+        alarmType = ALM2_MATCH_DAY;
+      } else if (hours != 0) {
+        alarmType = ALM2_MATCH_HOURS;
+      } else {
+        alarmType = ALM2_MATCH_MINUTES;
+      }
+      alarm2 = true;
+    }
+    Watchy::RTC.setAlarm(alarmType, secs, mins, hours, days);
+  }
+  Watchy::RTC.alarmInterrupt(ALARM_1, alarm1);  // enable alarm interrupt
+  Watchy::RTC.alarmInterrupt(ALARM_2, alarm2);  // enable alarm interrupt
+#endif
+}
+
 void handler(void *handler_args, esp_event_base_t base, int32_t id,
              void *event_data) {
   log_i("handle event %d", id);

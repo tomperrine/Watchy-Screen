@@ -149,6 +149,7 @@ void init() {
       break;
 #endif
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
+      RTC.alarm(ALARM_1);        // resets the alarm flag in the RTC
       RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
       Watchy_Event::send(Watchy_Event::UPDATE_SCREEN);
       break;
@@ -156,9 +157,6 @@ void init() {
       handleButtonPress();
       break;
     default:  // reset
-#ifndef ESP_RTC
-      _rtcConfig();
-#endif
       _bmaConfig();
       showWatchFace(false);  // full update on reset
       break;
@@ -169,13 +167,7 @@ void init() {
 void deepSleep() {
   log_i("*** sleeping ***\n");
   display.hibernate();
-#ifndef ESP_RTC
-  esp_sleep_enable_ext0_wakeup(RTC_PIN,
-                               0);  // enable deep sleep wake on RTC interrupt
-#endif
-#ifdef ESP_RTC
-  esp_sleep_enable_timer_wakeup(60000000);
-#endif
+  _rtcConfig();
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press
@@ -183,11 +175,12 @@ void deepSleep() {
 }
 
 void _rtcConfig() {
+#ifndef ESP_RTC
   // https://github.com/JChristensen/DS3232RTC
   RTC.squareWave(SQWAVE_NONE);  // disable square wave output
-  RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0,
-               0);                    // alarm wakes up Watchy every minute
-  RTC.alarmInterrupt(ALARM_2, true);  // enable alarm interrupt
+  esp_sleep_enable_ext0_wakeup(RTC_PIN,
+                              0);  // enable deep sleep wake on RTC interrupt
+#endif
 }
 
 void showWatchFace(bool partialRefresh, Screen *s) {
@@ -206,6 +199,7 @@ void setScreen(Screen *s) {
     return;
   }
   screen = s;
+  Watchy_Event::setUpdateInterval(Watchy_Event::DEFAULT_UPDATE_INTERVAL);
   showWatchFace(true);
 }
 
