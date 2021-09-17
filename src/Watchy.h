@@ -11,6 +11,7 @@
 #include "BLE.h"
 #include "bma.h"
 #include "config.h"
+#include "Events.h"
 
 class Screen;
 
@@ -37,7 +38,6 @@ void releaseWiFi();
 
 void showWatchFace(bool partialRefresh, Screen *s = screen);
 void setScreen(Screen *s);
-bool pollButtonsAndDispatch();  // returns true if button was pressed
 
 // stored in RTC_DATA_ATTR
 extern BMA423 sensor;

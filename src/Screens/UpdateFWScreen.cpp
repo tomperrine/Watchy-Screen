@@ -8,6 +8,7 @@ using namespace Watchy;
 
 class : public Screen {
   void show() {
+    Watchy_Event::setUpdateInterval(0);
     Watchy::display.fillScreen(bgColor);
     display.setFont(OptimaLTStd12pt7b);
     display.println("\nBLE Connected!");
@@ -19,6 +20,7 @@ class : public Screen {
 
 class : public Screen {
   void show() {
+    Watchy_Event::setUpdateInterval(0);
     Watchy::display.fillScreen(bgColor);
     display.setFont(OptimaLTStd12pt7b);
     display.println("\nDownload");
@@ -30,6 +32,7 @@ class : public Screen {
 
 class : public Screen {
   void show() {
+    Watchy_Event::setUpdateInterval(0);
     Watchy::display.fillScreen(bgColor);
     display.setFont(OptimaLTStd12pt7b);
     display.println("\nBLE Disconnected!");
@@ -50,6 +53,7 @@ void btPoll(Screen *s) {
    public:
     updateFWDownloadingScreen(BLE &bt, uint16_t bg = GxEPD_WHITE) : Screen(bg), BT(bt) {}
     void show() {
+      Watchy_Event::setUpdateInterval(0);
       Watchy::display.fillScreen(bgColor);
       display.setFont(OptimaLTStd12pt7b);
       display.println("\nDownloading");
@@ -103,6 +107,7 @@ void btPoll(Screen *s) {
 
 class : public Screen {
   void show() {
+    Watchy_Event::setUpdateInterval(0);
     Watchy::display.fillScreen(bgColor);
     display.setFont(OptimaLTStd12pt7b);
     display.println("\nBluetooth Started");
@@ -117,6 +122,7 @@ class : public Screen {
 } updateFWBeginScreen;
 
 void UpdateFWScreen::show() {
+  Watchy_Event::setUpdateInterval(0);
   Watchy::display.fillScreen(bgColor);
   display.setFont(OptimaLTStd12pt7b);
   display.println("\nPlease Visit");

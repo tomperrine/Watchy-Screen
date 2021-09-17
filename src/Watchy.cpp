@@ -43,44 +43,6 @@ String getValue(String data, char separator, int index) {
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-void debounce(uint8_t pin, int state) {
-  // wait for changed state + 40ms
-  // or 400ms
-  unsigned long timeout = millis() + 400;
-  while (millis() < timeout) {
-    if (digitalRead(pin) != state) {
-      delay(min(timeout - millis(), 40ul));
-      break;
-    }
-    yield();
-  }
-}
-
-bool pollButtonsAndDispatch()  // returns true if button was pressed
-{
-  if (digitalRead(MENU_BTN_PIN) == 1) {
-    debounce(MENU_BTN_PIN, 1);
-    screen->menu();
-    return true;
-  }
-  if (digitalRead(BACK_BTN_PIN) == 1) {
-    debounce(BACK_BTN_PIN, 1);
-    screen->back();
-    return true;
-  }
-  if (digitalRead(UP_BTN_PIN) == 1) {
-    debounce(UP_BTN_PIN, 1);
-    screen->up();
-    return true;
-  }
-  if (digitalRead(DOWN_BTN_PIN) == 1) {
-    debounce(DOWN_BTN_PIN, 1);
-    screen->down();
-    return true;
-  }
-  return false;
-}
-
 void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
   switch (wakeupBit & BTN_PIN_MASK) {
@@ -99,7 +61,6 @@ void handleButtonPress() {
     default:
       break;
   }
-  // TODO: set a five second sleep timer
 }
 
 tmElements_t currentTime;  // should probably be in SyncTime
@@ -111,10 +72,28 @@ void AddOnWakeCallback(const OnWakeCallback owc) {
   owcVec.push_back(owc);
 }
 
+const char * wakeupReasonToString(esp_sleep_wakeup_cause_t wakeup_reason) {
+  switch (wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_UNDEFINED: return("UNDEFINED");
+    case ESP_SLEEP_WAKEUP_ALL: return("ALL");
+    case ESP_SLEEP_WAKEUP_EXT0: return("EXT0");
+    case ESP_SLEEP_WAKEUP_EXT1: return("EXT1");
+    case ESP_SLEEP_WAKEUP_TIMER: return("TIMER");
+    case ESP_SLEEP_WAKEUP_TOUCHPAD: return("TOUCHPAD");
+    case ESP_SLEEP_WAKEUP_ULP: return("ULP");
+    case ESP_SLEEP_WAKEUP_GPIO: return("GPIO");
+    case ESP_SLEEP_WAKEUP_UART: return("UART");
+    default: return("unknown");
+  }
+}
+
+uint64_t start;
+
 void init() {
-  esp_sleep_wakeup_cause_t wakeup_reason;
-  wakeup_reason = esp_sleep_get_wakeup_cause();  // get wake up reason
+  start = micros();
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();  // get wake up reason
   Wire.begin(SDA, SCL);                          // init i2c
+  log_i("reason %s", wakeupReasonToString(wakeup_reason));
 
   // sync ESP32 clocks to RTC
   if (RTC.read(currentTime) == 0) {
@@ -131,8 +110,8 @@ void init() {
   }
 
   switch (wakeup_reason) {
-#ifdef ESP_RTC
     case ESP_SLEEP_WAKEUP_TIMER:  // ESP Internal RTC
+#ifdef ESP_RTC
       tmElements_t currentTime;
       RTC.read(currentTime);
       currentTime.Minute++;
@@ -145,9 +124,9 @@ void init() {
       tm.Second = 0;
       time_t t = makeTime(tm);
       RTC.set(t);
-      showWatchFace(true);  // partial updates on tick
-      break;
 #endif
+      Watchy_Event::send(Watchy_Event::UPDATE_SCREEN);
+      break;
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
       RTC.alarm(ALARM_1);        // resets the alarm flag in the RTC
       RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
@@ -165,12 +144,13 @@ void init() {
 }
 
 void deepSleep() {
-  log_i("*** sleeping ***\n");
+  uint64_t elapsed = micros()-start;
   display.hibernate();
   _rtcConfig();
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press
+  log_i("*** sleeping %llu.%03llu ***\n", elapsed/1000, elapsed%1000);
   esp_deep_sleep_start();
 }
 
@@ -178,8 +158,6 @@ void _rtcConfig() {
 #ifndef ESP_RTC
   // https://github.com/JChristensen/DS3232RTC
   RTC.squareWave(SQWAVE_NONE);  // disable square wave output
-  esp_sleep_enable_ext0_wakeup(RTC_PIN,
-                              0);  // enable deep sleep wake on RTC interrupt
 #endif
 }
 
@@ -193,13 +171,16 @@ void showWatchFace(bool partialRefresh, Screen *s) {
   display.display(partialRefresh);  // partial refresh
 }
 
+const Screen *getScreen() {
+  return screen;
+}
+
 // setScreen is used to set a new screen on the display
 void setScreen(Screen *s) {
   if (s == nullptr) {
     return;
   }
   screen = s;
-  Watchy_Event::setUpdateInterval(Watchy_Event::DEFAULT_UPDATE_INTERVAL);
   showWatchFace(true);
 }
 

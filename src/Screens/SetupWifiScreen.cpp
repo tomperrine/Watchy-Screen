@@ -21,6 +21,7 @@ void _configModeCallback(WiFiManager *myWiFiManager) {
 }
 
 void SetupWifiScreen::show() {
+  Watchy_Event::setUpdateInterval(0);
   // this is a little ugly the show() method blocks without
   // showing anything in autoConnect, and lets _configModeCallback
   // set the display

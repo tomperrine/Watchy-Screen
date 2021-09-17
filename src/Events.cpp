@@ -33,29 +33,24 @@ void removeBGTask(TaskFunction_t t) {
   }
 }
 
-void setUpdateInterval(uint32_t ms) {
-#ifdef ESP_RTC
-  esp_sleep_enable_timer_wakeup(ms * 1000);
-#else
+RTC_DATA_ATTR uint32_t updateInterval = 0;
+
+void setUpdateRTC(uint32_t interval) {
   bool alarm1 = false;
-  bool alarm2 = false;
-  if (ms == 60000) {
+  ALARM_TYPES_t alarmType;
+  if (interval == 60) {
     Watchy::RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0);
-    alarm2 = true;
-  } else if (ms == 1000) {
+    alarm1 = false;
+  } else if (interval == 1) {
     Watchy::RTC.setAlarm(ALM1_EVERY_SECOND, 0, 0, 0, 0);
     alarm1 = true;
-  } else if (ms % 1000 != 0 || ms >= SECS_PER_DAY * 1000) {
-    esp_sleep_enable_timer_wakeup(ms * 1000);
-  } else if (ms > 0) {
-    ms /= 1000;
-    byte secs = ms % 60;
-    ms /= 60;
-    byte mins = ms % 60;
-    ms /= 60;
-    byte hours = ms % 24;
-    byte days = ms / 24;
-    ALARM_TYPES_t alarmType;
+  } else {
+    byte secs = interval % 60;
+    interval /= 60;
+    byte mins = interval % 60;
+    interval /= 60;
+    byte hours = interval % 24;
+    byte days = interval / 24;
     if (secs != 0) {
       // has to be alarm 1 if it has secs
       if (days != 0) {
@@ -77,20 +72,62 @@ void setUpdateInterval(uint32_t ms) {
       } else {
         alarmType = ALM2_MATCH_MINUTES;
       }
-      alarm2 = true;
+      alarm1 = false;
     }
+    log_i("rtc alarm[%02x] %d %02d:%02d:%02d", alarmType, days, hours, mins,
+          secs);
     Watchy::RTC.setAlarm(alarmType, secs, mins, hours, days);
   }
-  Watchy::RTC.alarmInterrupt(ALARM_1, alarm1);  // enable alarm interrupt
-  Watchy::RTC.alarmInterrupt(ALARM_2, alarm2);  // enable alarm interrupt
+  log_i("RTC %s", alarm1 ? "alarm1" : "alarm2");
+  Watchy::RTC.alarmInterrupt(ALARM_1, alarm1);   // set/reset alarm interrupt
+  Watchy::RTC.alarmInterrupt(ALARM_2, !alarm1);  // set/reset alarm interrupt
+}
+
+void setUpdateInterval(uint32_t ms) {
+  if (ms == 0) {
+    updateInterval = ms;
+    return;
+  }
+#ifdef ESP_RTC
+  log_i("wake on esp timer %lld", uint64_t(ms) * 1000ULL);
+  esp_sleep_enable_timer_wakeup(uint64_t(ms) * 1000ULL);
+  updateInterval = ms;
+#else
+  if (ms % 1000 != 0 || ms >= SECS_PER_DAY * 1000) {
+    log_i("esp_sleep_enable_timer_wakeup(%llu)", uint64_t(ms) * 1000ULL);
+    esp_sleep_enable_timer_wakeup(uint64_t(ms) * 1000ULL);
+    updateInterval = ms;
+    return;
+  }
+  // will be an RTC alarm of some sort
+  if (updateInterval != ms) {
+    setUpdateRTC(ms/1000);
+    updateInterval = ms;
+  }
+  log_i("esp_sleep_enable_ext0_wakeup(%d, %d)", RTC_PIN, 0);
+  esp_sleep_enable_ext0_wakeup(RTC_PIN, 0);      // enable deep sleep wake on RTC interrupt
 #endif
+}
+
+const char * IDtoString(ID id) {
+  switch (id) {
+    case NULL_EVENT: return "NULL_EVENT";
+    case MENU_BTN_DOWN: return "MENU_BTN_DOWN";
+    case BACK_BTN_DOWN: return "BACK_BTN_DOWN";
+    case UP_BTN_DOWN: return "UP_BTN_DOWN";
+    case DOWN_BTN_DOWN: return "DOWN_BTN_DOWN";
+    case UPDATE_SCREEN: return "UPDATE_SCREEN";
+    case MAX: return "MAX";
+    default: return "unknown";
+  }
 }
 
 void handler(void *handler_args, esp_event_base_t base, int32_t id,
              void *event_data) {
-  log_i("handle event %d", id);
+  log_i("handle event %s", IDtoString(static_cast<ID>(id)));
   if (Watchy::screen != nullptr) {
-    switch ((ID)id) {
+    addBGTask(reinterpret_cast<TaskFunction_t>(&handler));
+    switch (static_cast<ID>(id)) {
       case MENU_BTN_DOWN:
         Watchy::screen->menu();
         break;
@@ -109,11 +146,12 @@ void handler(void *handler_args, esp_event_base_t base, int32_t id,
       default:
         break;
     }
+    removeBGTask(reinterpret_cast<TaskFunction_t>(&handler));
   }
 }
 
 void send(ID eventID, void *eventData) {
-  log_i("send event %d %08x", eventID, (uint32_t)eventData);
+  log_i("send event %s", IDtoString(eventID));
   esp_event_post(BASE, eventID, eventData, 0, 0);
 }
 
@@ -129,13 +167,12 @@ void producer(void *p) {
   const unsigned long DEBOUNCE_INTERVAL = 150000;  // 150ms
   uint32_t status;
   while (true) {
-    auto v = xTaskNotifyWait(0x00, ULONG_MAX, &status, pdMS_TO_TICKS(5000));
+    auto v = xTaskNotifyWait(0x00, ULONG_MAX, &status, pdMS_TO_TICKS(50));
     if (v != pdPASS) {
       if (tasks.size() == 0) {
         // no tasks outstanding
-        Watchy::deepSleep();  // after 5 seconds with no events
+        Watchy::deepSleep();
       };
-      log_i("%d tasks waiting", tasks.size());
       continue;
     }
     if (lastStatus == status && micros() <= lastMicros + DEBOUNCE_INTERVAL) {

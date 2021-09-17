@@ -17,6 +17,7 @@ void printLocation(const Watchy_GetLocation::location *loc) {
 }
 
 void SetLocationScreen::show() {
+  Watchy_Event::setUpdateInterval(0);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
   switch (getLocationState) {

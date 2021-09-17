@@ -29,6 +29,7 @@ void rightJustify(const char *txt, uint16_t &yPos) {
 }
 
 void TimeScreen::show() {
+  Watchy_Event::setUpdateInterval(SECS_PER_MIN*1000);
   tm t;
   time_t tt = now();
   localtime_r(&tt, &t);
