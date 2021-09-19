@@ -188,7 +188,7 @@ void start(void) {
                                ESP_TASKD_EVENT_PRIO, &producerTask);
   configASSERT(producerTask);
   if (res != pdPASS) {
-    log_d("task create result %d", res);
+    log_e("create producer task failed: %d", res);
   }
 }
 }  // namespace Watchy_Event
