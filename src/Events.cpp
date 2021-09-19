@@ -35,54 +35,6 @@ void removeBGTask(TaskFunction_t t) {
 
 RTC_DATA_ATTR uint32_t updateInterval = 0;
 
-void setUpdateRTC(uint32_t interval) {
-  bool alarm1 = false;
-  ALARM_TYPES_t alarmType;
-  if (interval == 60) {
-    Watchy::RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0);
-    alarm1 = false;
-  } else if (interval == 1) {
-    Watchy::RTC.setAlarm(ALM1_EVERY_SECOND, 0, 0, 0, 0);
-    alarm1 = true;
-  } else {
-    byte secs = interval % 60;
-    interval /= 60;
-    byte mins = interval % 60;
-    interval /= 60;
-    byte hours = interval % 24;
-    byte days = interval / 24;
-    if (secs != 0) {
-      // has to be alarm 1 if it has secs
-      if (days != 0) {
-        alarmType = ALM1_MATCH_DAY;
-      } else if (hours != 0) {
-        alarmType = ALM1_MATCH_HOURS;
-      } else if (mins != 0) {
-        alarmType = ALM1_MATCH_MINUTES;
-      } else {
-        alarmType = ALM1_MATCH_SECONDS;
-      }
-      alarm1 = true;
-    } else {
-      // no secs, can be alarm 2
-      if (days != 0) {
-        alarmType = ALM2_MATCH_DAY;
-      } else if (hours != 0) {
-        alarmType = ALM2_MATCH_HOURS;
-      } else {
-        alarmType = ALM2_MATCH_MINUTES;
-      }
-      alarm1 = false;
-    }
-    log_i("rtc alarm[%02x] %d %02d:%02d:%02d", alarmType, days, hours, mins,
-          secs);
-    Watchy::RTC.setAlarm(alarmType, secs, mins, hours, days);
-  }
-  log_i("RTC %s", alarm1 ? "alarm1" : "alarm2");
-  Watchy::RTC.alarmInterrupt(ALARM_1, alarm1);   // set/reset alarm interrupt
-  Watchy::RTC.alarmInterrupt(ALARM_2, !alarm1);  // set/reset alarm interrupt
-}
-
 void setUpdateInterval(uint32_t ms) {
   if (ms == 0) {
     updateInterval = ms;
@@ -99,11 +51,11 @@ void setUpdateInterval(uint32_t ms) {
     updateInterval = ms;
     return;
   }
-  // will be an RTC alarm of some sort
-  if (updateInterval != ms) {
-    setUpdateRTC(ms/1000);
-    updateInterval = ms;
-  }
+  updateInterval = ms;
+  time_t t = ((time(nullptr)/(ms/1000))+1)*(ms/1000);
+  Watchy::RTC.setAlarm(ALM1_MATCH_DAY, numberOfSeconds(t), numberOfMinutes(t),
+                       numberOfHours(t), dayOfWeek(t));
+  Watchy::RTC.alarmInterrupt(ALARM_1, true);   // set/reset alarm interrupt
   log_i("esp_sleep_enable_ext0_wakeup(%d, %d)", RTC_PIN, 0);
   esp_sleep_enable_ext0_wakeup(RTC_PIN, 0);      // enable deep sleep wake on RTC interrupt
 #endif

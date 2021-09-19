@@ -137,7 +137,9 @@ void init() {
       break;
     default:  // reset
       _bmaConfig();
-      showWatchFace(false);  // full update on reset
+      RTC.alarmInterrupt(ALARM_1, false);  // reset alarm interrupt
+      RTC.alarmInterrupt(ALARM_2, false);  // reset alarm interrupt
+      showWatchFace(false);                // full update on reset
       break;
   }
   // deepSleep();
