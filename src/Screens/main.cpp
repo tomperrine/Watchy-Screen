@@ -103,14 +103,22 @@ void setup() {
     });
   }
   if (Watchy_GetLocation::lastGetLocationTS == 0) {
-    Watchy_Event::beginBackgroundTask(
-        [](void* p) { Watchy_GetLocation::getLocation(); });
+    Watchy_Event::beginBackgroundTask([](void* p) {
+      Watchy_GetLocation::getLocation();
+    });
   }
-  if (Watchy::screen == nullptr) { Watchy::screen = &carousel; }
+  if (Watchy::screen == nullptr) {
+    Watchy::screen = &carousel;
+  }
   Watchy::init();
 }
 
+unsigned long count = 0;
 void loop() {
+  if (count % 10000 == 0) {
+    log_i("%d", count);
+  }
+  count++;
   delay(1); // give any ready tasks a chance to run...
   // Watchy::deepSleep(); // loop only gets called by the idle hook
 }
