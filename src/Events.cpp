@@ -104,7 +104,7 @@ void handler(void *handler_args, esp_event_base_t base, int32_t id,
 
 void send(ID eventID, void *eventData) {
   log_i("send event %s", IDtoString(eventID));
-  esp_event_post(BASE, eventID, eventData, 0, 0);
+  esp_event_post_to(loop, BASE, eventID, eventData, 0, 0);
 }
 
 /**
@@ -173,16 +173,26 @@ TaskHandle_t beginBackgroundTask(TaskFunction_t f) {
 
 TaskHandle_t producerTask;
 
+#define ESP_ERROR_CHECK(x) do { esp_err_t __err_rc = (x); if (__err_rc != ESP_OK) { log_e("err: %s", esp_err_to_name(__err_rc)); } } while(0);
+
 void start(void) {
-  ESP_ERROR_CHECK(
-      esp_event_loop_create_default());  // does this interfere with elsewhere?
-  ESP_ERROR_CHECK(
-      esp_event_handler_register(BASE, ESP_EVENT_ANY_ID, handler, nullptr));
+  esp_event_loop_args_t loopArgs = {
+    .queue_size = 8,
+    .task_name = "Event",
+    .task_priority = ESP_TASKD_EVENT_PRIO,
+    .task_stack_size = CONFIG_MAIN_TASK_STACK_SIZE,
+    .task_core_id = 1, // "APP" core
+  };
+  ESP_ERROR_CHECK(esp_event_loop_create(&loopArgs, &loop));
+  ESP_ERROR_CHECK(esp_event_handler_register_with(loop, BASE, ESP_EVENT_ANY_ID,
+                                                  handler, nullptr));
 
   buttonSetup(MENU_BTN_PIN, menu_btn);
   buttonSetup(BACK_BTN_PIN, back_btn);
   buttonSetup(UP_BTN_PIN, up_btn);
   buttonSetup(DOWN_BTN_PIN, down_btn);
+  // register for RTC gpio to send screen update events during long running
+  // tasks. Figure out how to do this for ESP RTC wakeup timer too.
 
   BaseType_t res = xTaskCreate(producer, "Event producer", 2048, nullptr,
                                ESP_TASKD_EVENT_PRIO, &producerTask);
