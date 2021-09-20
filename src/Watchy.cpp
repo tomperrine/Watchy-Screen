@@ -149,6 +149,7 @@ void deepSleep() {
   uint64_t elapsed = micros()-start;
   display.hibernate();
   _rtcConfig();
+  Watchy_Event::enableUpdateTimer();
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press

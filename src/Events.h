@@ -23,6 +23,7 @@ extern TaskHandle_t producerTask;
 extern TaskHandle_t beginBackgroundTask(TaskFunction_t f);
 
 extern void setUpdateInterval(uint32_t ms);
+extern void enableUpdateTimer();
 
 extern void start(void);
 extern void send(ID eventID, void *eventData = nullptr);

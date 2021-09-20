@@ -36,8 +36,11 @@ void removeBGTask(TaskFunction_t t) {
 RTC_DATA_ATTR uint32_t updateInterval = 0;
 
 void setUpdateInterval(uint32_t ms) {
-  if (ms == 0) {
-    updateInterval = ms;
+  updateInterval = ms;  
+}
+
+void enableUpdateTimer() {
+  if (updateInterval == 0) {
     return;
   }
 #ifdef ESP_RTC
@@ -45,14 +48,13 @@ void setUpdateInterval(uint32_t ms) {
   esp_sleep_enable_timer_wakeup(uint64_t(ms) * 1000ULL);
   updateInterval = ms;
 #else
-  if (ms % 1000 != 0 || ms >= SECS_PER_DAY * 1000) {
-    log_i("esp_sleep_enable_timer_wakeup(%llu)", uint64_t(ms) * 1000ULL);
-    esp_sleep_enable_timer_wakeup(uint64_t(ms) * 1000ULL);
-    updateInterval = ms;
+  if (updateInterval % 1000 != 0 || updateInterval >= SECS_PER_DAY * 1000) {
+    log_i("esp_sleep_enable_timer_wakeup(%llu)", uint64_t(updateInterval) * 1000ULL);
+    esp_sleep_enable_timer_wakeup(uint64_t(updateInterval) * 1000ULL);
     return;
   }
-  updateInterval = ms;
-  time_t t = ((time(nullptr)/(ms/1000))+1)*(ms/1000);
+  time_t t = ((time(nullptr)/(updateInterval/1000))+1)*(updateInterval/1000);
+  log_i("%s", ctime(&t));
   Watchy::RTC.setAlarm(ALM1_MATCH_DAY, numberOfSeconds(t), numberOfMinutes(t),
                        numberOfHours(t), dayOfWeek(t));
   Watchy::RTC.alarmInterrupt(ALARM_1, true);   // set/reset alarm interrupt
