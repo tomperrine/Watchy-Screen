@@ -6,15 +6,13 @@
 
 const int WIFI_AP_TIMEOUT = 60;
 
-QueueHandle_t q;
-
 void _configModeCallback(WiFiManager *myWiFiManager) {
   Watchy::display.println("Connect to");
   Watchy::display.print("SSID: ");
   Watchy::display.println(WIFI_AP_SSID);
   Watchy::display.print("IP: ");
   Watchy::display.println(WiFi.softAPIP());
-  // xQueueSend(q, nullptr, 0);
+  Watchy::display.display(true);
 }
 
 void SetupWifiScreen::show() {
@@ -29,8 +27,17 @@ void SetupWifiScreen::show() {
   wifiManager.setAPCallback(_configModeCallback);
   Watchy::WIFI_CONFIGURED = wifiManager.autoConnect(WIFI_AP_SSID);
 
-  // if (!xQueueReceive(q, nullptr, pdMS_TO_TICKS((WIFI_AP_TIMEOUT+1) * 1000))) {
-  if (!Watchy::WIFI_CONFIGURED) {
+  Watchy::display.fillScreen(bgColor);
+  Watchy::display.setFont(OptimaLTStd12pt7b);
+  Watchy::display.setCursor(0, 30);
+
+  if (Watchy::WIFI_CONFIGURED) {
+    Watchy::display.println("Success!");
+    Watchy::display.println("Connected to");
+    Watchy::display.println(WiFi.SSID());
+    Watchy::display.println("press back");
+    Watchy::display.println("to return to menu");
+  } else {
     Watchy::display.println("Wifi setup");
     Watchy::display.println("failed");
     Watchy::display.println("Connection");
