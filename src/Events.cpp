@@ -54,7 +54,13 @@ void enableUpdateTimer() {
     return;
   }
   time_t t = ((time(nullptr)/(updateInterval/1000))+1)*(updateInterval/1000);
-  log_i("%s", ctime(&t));
+  uint8_t err;
+  tmElements_t tm;
+  if (err = Watchy::RTC.read(tm)) {
+    log_e("error reading DTC %d", err);
+  }
+  log_i("%4d %d %02d:%02d:%02d", t-time(nullptr), tm.Wday, tm.Hour, tm.Minute, tm.Second);
+  log_i("     %d %02d:%02d:%02d", dayOfWeek(t), numberOfHours(t), numberOfMinutes(t), numberOfSeconds(t));
   Watchy::RTC.setAlarm(ALM1_MATCH_DAY, numberOfSeconds(t), numberOfMinutes(t),
                        numberOfHours(t), dayOfWeek(t));
   Watchy::RTC.alarmInterrupt(ALARM_1, true);   // set/reset alarm interrupt
