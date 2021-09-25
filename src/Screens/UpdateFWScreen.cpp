@@ -93,8 +93,7 @@ void UpdateFWScreen::show() {
   Watchy::display.println("in a Bluetooth");
   Watchy::display.println("enabled browser");
   Watchy::display.println("On USB power");
-  Watchy::display.println();
-  Watchy::display.println("Press menu when ready");
+  Watchy::display.println("Then press menu");
 }
 
 void UpdateFWScreen::menu() { Watchy::setScreen(&updateFWBeginScreen); }
