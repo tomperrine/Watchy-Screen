@@ -7,6 +7,7 @@
 #include "ImageScreen.h"
 #include "MenuScreen.h"
 #include "OptimaLTStd22pt7b.h"
+#include "OTAScreen.h"
 #include "SetLocationScreen.h"
 #include "SetTimeScreen.h"
 #include "SetupWifiScreen.h"
@@ -34,10 +35,12 @@ SyncTimeScreen syncTimeScreen;
 SetLocationScreen setLocationScreen;
 GetWeatherScreen getWeatherScreen;
 BuzzScreen buzzScreen;
+OTAScreen otaScreen;
 
 MenuItem menuItems[] = {{"Set Time", &setTimeScreen},
                         {"Setup WiFi", &setupWifiScreen},
-                        {"Update Firmware", &updateFWScreen},
+                        {"Update (OTA)", &otaScreen},
+                        {"Update (BLE)", &updateFWScreen},
                         {"Sync Time", &syncTimeScreen},
                         {"Set Location", &setLocationScreen},
                         {"Get Weather", &getWeatherScreen},
@@ -83,8 +86,17 @@ CarouselItem carouselItems[] = {{&timeScreen, nullptr},
 CarouselScreen carousel(carouselItems,
                         sizeof(carouselItems) / sizeof(carouselItems[0]));
 
+Watchy_Event::BackgroundTask timeSync("timeSync", [](void* p) {
+  Watchy_SyncTime::syncTime(Watchy_GetLocation::currentLocation.timezone);
+});
+
+Watchy_Event::BackgroundTask getLocation("getLocation", [](void* p) {
+  Watchy_GetLocation::getLocation();
+});
+
 void setup() {
-#ifdef NOTDEF
+  Serial.begin(115200);
+#if 0
   esp_log_level_set("*", static_cast<esp_log_level_t>(CORE_DEBUG_LEVEL));
 #endif
   log_d(); // fail if debugging macros not defined
@@ -97,15 +109,12 @@ void setup() {
   // persistent. So whenever we wake up, try to sync the time and location
   // if they haven't ever been synced. If there is a persistent failure
   // this can drain your battery...
-  if (Watchy_SyncTime::lastSyncTimeTS == 0) {
-    Watchy_Event::beginBackgroundTask([](void* p) {
-      Watchy_SyncTime::syncTime(Watchy_GetLocation::currentLocation.timezone);
-    });
+  if (Watchy_SyncTime::lastSyncTimeTS < SECS_YR_2000) {
+    timeSync.begin();
   }
-  if (Watchy_GetLocation::lastGetLocationTS == 0) {
-    Watchy_Event::beginBackgroundTask([](void* p) {
-      Watchy_GetLocation::getLocation();
-    });
+
+  if (Watchy_GetLocation::lastGetLocationTS < SECS_YR_2000) {
+    getLocation.begin();
   }
   if (Watchy::screen == nullptr) {
     Watchy::screen = &carousel;
@@ -120,5 +129,4 @@ void loop() {
   }
   count++;
   delay(1); // give any ready tasks a chance to run...
-  // Watchy::deepSleep(); // loop only gets called by the idle hook
 }
