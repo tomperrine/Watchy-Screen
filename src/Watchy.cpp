@@ -47,21 +47,23 @@ void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
   switch (wakeupBit & BTN_PIN_MASK) {
     case MENU_BTN_MASK:
-      Watchy_Event::send(Watchy_Event::MENU_BTN_DOWN);
+      Watchy_Event::Event{.id = Watchy_Event::MENU_BTN_DOWN}.send();
       break;
     case BACK_BTN_MASK:
-      Watchy_Event::send(Watchy_Event::BACK_BTN_DOWN);
+      Watchy_Event::Event{.id = Watchy_Event::BACK_BTN_DOWN}.send();
       break;
     case UP_BTN_MASK:
-      Watchy_Event::send(Watchy_Event::UP_BTN_DOWN);
+      Watchy_Event::Event{.id = Watchy_Event::UP_BTN_DOWN}.send();
       break;
     case DOWN_BTN_MASK:
-      Watchy_Event::send(Watchy_Event::DOWN_BTN_DOWN);
+      Watchy_Event::Event{.id = Watchy_Event::DOWN_BTN_DOWN}.send();
       break;
     default:
       break;
   }
 }
+
+QueueHandle_t i2cMutex = xSemaphoreCreateRecursiveMutex();
 
 tmElements_t currentTime;  // should probably be in SyncTime
 
@@ -97,21 +99,49 @@ const char *wakeupReasonToString(esp_sleep_wakeup_cause_t wakeup_reason) {
 
 uint64_t start;
 
-void init() {
-  start = micros();
-  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();  // get wake up reason
-  Wire.begin(SDA, SCL);                          // init i2c
-  log_i("reason %s", wakeupReasonToString(wakeup_reason));
+bool validTime(const tmElements_t &t) {
+  if (t.Second >= 60) { return false; }
+  if (t.Minute >= 60) { return false; }
+  if (t.Hour >= 24) { return false; }
+  if (t.Month > 12) { return false; }
+  if (t.Day > 31) { return false; }
+  if (t.Wday > 7) { return false; }
+  return true;
+}
+
+bool fixTime(tmElements_t &t) {
+  if (t.Second >= 60) { t.Second = 0; }
+  if (t.Minute >= 60) { t.Minute = 0; }
+  if (t.Hour >= 24) { t.Hour = 0; }
+  if (t.Month > 12) { t.Month = 1; }
+  if (t.Day > 31) { t.Day = 1; }
+  if (t.Wday > 7) { t.Wday = 1; }
+  return (RTC.write(t) == 0);
+}
+
+void initTime() {
+  Wire.begin(SDA, SCL);              // init i2c
 
   // sync ESP32 clocks to RTC
-  if (RTC.read(currentTime) == 0) {
-    setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
-    tzset();
-    time_t t = makeTime(currentTime);
-    setTime(t);
-    timeval tv = {t, 0};
-    settimeofday(&tv, nullptr);
-  }
+  assert(RTC.read(currentTime) == 0);
+  assert(RTC.read(currentTime) == 0); // DEBUG
+  assert(validTime(currentTime) || fixTime(currentTime));
+  setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
+  tzset();
+  time_t t = makeTime(currentTime);
+  setTime(t);
+  timeval tv = {t, 0};
+  settimeofday(&tv, nullptr);
+}
+
+void init() {
+  start = micros();
+  Watchy_Event::BackgroundTask initTask("init", nullptr);
+  initTask.add();
+  esp_sleep_wakeup_cause_t wakeup_reason =
+      esp_sleep_get_wakeup_cause();  // get wake up reason
+  log_i("reason %s", wakeupReasonToString(wakeup_reason));
+  initTime();
 
   for (auto &&owc : owcVec) {
     owc(wakeup_reason);
@@ -133,12 +163,12 @@ void init() {
       time_t t = makeTime(tm);
       RTC.set(t);
 #endif
-      Watchy_Event::send(Watchy_Event::UPDATE_SCREEN);
+      Watchy_Event::Event{.id = Watchy_Event::UPDATE_SCREEN}.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
       RTC.alarm(ALARM_1);        // resets the alarm flag in the RTC
       RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
-      Watchy_Event::send(Watchy_Event::UPDATE_SCREEN);
+      Watchy_Event::Event{.id = Watchy_Event::UPDATE_SCREEN}.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT1:  // button Press
       handleButtonPress();
@@ -149,6 +179,7 @@ void init() {
       showWatchFace(false);  // full update on reset
       break;
   }
+  initTask.remove();
   // deepSleep();
 }
 
@@ -159,7 +190,8 @@ void deepSleep() {
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press
-  log_i("*** sleeping %llu.%03llu ***\n", elapsed/1000, elapsed%1000);
+  log_i("%6d *** sleeping after %llu.%03llums ***\n", millis(), elapsed / 1000,
+        elapsed % 1000);
   esp_deep_sleep_start();
 }
 
@@ -218,12 +250,12 @@ void setScreen(Screen *s) {
 // This mutex protects the WiFi object, wifiConnectionCount
 // and wifiReset
 auto wifiMutex = xSemaphoreCreateMutex();
+RTC_DATA_ATTR bool wifiReset = false;
 
 bool connectWiFi() {
   // in theory this is re-entrant, but in practice if you call WiFi.begin()
   // while it's still trying to connect, it will return an error. Better
   // to serialize WiFi.begin()
-  xSemaphoreTake(wifiMutex, portMAX_DELAY);
   if (!wifiReset) {
     wifi_init_config_t wifi_config = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&wifi_config);
@@ -250,30 +282,33 @@ bool connectWiFi() {
       btStop();
     }
   }
-  xSemaphoreGive(wifiMutex);
   return WIFI_CONFIGURED;
 }
 
 unsigned int wifiConnectionCount = 0;
 
 bool getWiFi() {
-  if (wifiConnectionCount > 0 || connectWiFi()) {
-    if (wifiConnectionCount == 0) {
-      log_d("wifi connected");
+  xSemaphoreTake(wifiMutex, portMAX_DELAY);
+  if (wifiConnectionCount == 0) {
+    if (!connectWiFi()) {
+      xSemaphoreGive(wifiMutex);
+      return false;
     }
-    wifiConnectionCount++;
-    return true;
+    log_d("wifi connected");
   }
-  return false;
+  wifiConnectionCount++;
+  xSemaphoreGive(wifiMutex);
+  return true;
 }
 
 void releaseWiFi() {
+  xSemaphoreTake(wifiMutex, portMAX_DELAY);
   wifiConnectionCount--;
-  if (wifiConnectionCount > 0) {
-    return;
+  if (wifiConnectionCount == 0) {
+    log_d("wifi disconnected");
+    btStop();
+    WiFi.mode(WIFI_OFF);
   }
-  log_d("wifi disconnected");
-  btStop();
-  WiFi.mode(WIFI_OFF);
+  xSemaphoreGive(wifiMutex);
 }
 }  // namespace Watchy

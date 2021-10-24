@@ -776,18 +776,24 @@ const char *getPosixTZforOlson(const char *olson) {
   return "UTC0"; // couldn't find it, use default
 }
 
-const location *getLocation() {
+void getLocation() {
   // http://ip-api.com/json?fields=57792
   // {"status":"success","lat":-27.4649,"lon":153.028,"timezone":"Australia/Brisbane","query":"202.144.174.72"}
-  if (lastGetLocationTS &&
-      (now() - lastGetLocationTS < LOCATION_UPDATE_INTERVAL)) {  // too soon
+  if (lastGetLocationTS < 3) {
+    log_i("lastGetLocationTS: %ld", lastGetLocationTS);
+    lastGetLocationTS++;
     Watchy::err = Watchy::RATE_LIMITED;
-    return &currentLocation;
+    return;
+  }
+  if (now() - lastGetLocationTS < LOCATION_UPDATE_INTERVAL) {  // too soon
+    log_i("%ld-%ld=%ld", now(), lastGetLocationTS, now() - lastGetLocationTS);
+    Watchy::err = Watchy::RATE_LIMITED;
+    return;
   }
   if (!Watchy::getWiFi()) {
     log_e("getWiFi failed");
     Watchy::err = Watchy::WIFI_FAILED;
-    return &currentLocation;
+    return;
   }
 
   auto start = millis();
@@ -814,7 +820,11 @@ const location *getLocation() {
       const char* olsonTZ = static_cast<const char *>(responseObject["timezone"]);
       loc.timezone = getPosixTZforOlson(olsonTZ);
       if ( loc.timezone ) {
-        currentLocation = loc;
+        Watchy_Event::Event {
+          .id = Watchy_Event::LOCATION_UPDATE,
+          .micros = micros(),
+          .data = {.loc = loc},
+        }.send();
         lastGetLocationTS = now();
         Watchy::err = Watchy::OK;
       } else {
@@ -830,6 +840,5 @@ const location *getLocation() {
   }
   log_i("getLocation took %ldms", millis() - start);
   Watchy::releaseWiFi();
-  return &currentLocation;
 }
 }  // namespace Watchy_GetLocation

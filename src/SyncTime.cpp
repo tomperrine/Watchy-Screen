@@ -21,10 +21,11 @@ QueueHandle_t q;
 // according to how the RTC represents it
 
 void timeSyncCallback(struct timeval *tv) {
-  // consider using tv.tv_usec as well
-  Watchy::RTC.set(tv->tv_sec);  // set RTC
-  setTime(tv->tv_sec);          // set system time
-  settimeofday(tv, nullptr);    // set posix
+  Watchy_Event::Event{
+    .id = Watchy_Event::TIME_SYNC,
+    .micros = micros(),
+    .data = {.tv = *tv},
+  }.send();
   sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
   lastSyncTimeTS = tv->tv_sec;
   log_d("lastSyncTimeTS %ld", lastSyncTimeTS);
@@ -32,6 +33,12 @@ void timeSyncCallback(struct timeval *tv) {
 }
 
 void syncTime(const char *timezone) {
+  if (lastSyncTimeTS < 2) {
+    log_i("lastSyncTimeTS: %lu", lastSyncTimeTS);
+    lastSyncTimeTS++;
+    Watchy::err = Watchy::RATE_LIMITED;
+    return;
+  }
   if (sntp_get_sync_status() != SNTP_SYNC_STATUS_RESET) {
     // SNTP busy
     log_i("%d", sntp_get_sync_status());
