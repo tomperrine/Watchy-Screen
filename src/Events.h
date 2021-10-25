@@ -2,15 +2,13 @@
 
 #include <vector>
 
-#include <esp_event.h>
+#include <FreeRTOS.h>
+#include <freertos/queue.h>
+#include <sys/time.h>
+
 #include "GetLocation.h"
 
 namespace Watchy_Event {
-
-ESP_EVENT_DECLARE_BASE(BASE);
-
-extern esp_event_loop_handle_t eventLoop;
-
 typedef enum {
   NULL_EVENT = 0,
   MENU_BTN_DOWN,
@@ -32,9 +30,10 @@ class Event {
     timeval tv; // TIME_SYNC
   } data;
   void send();
+  void handle();
 };
 
-extern TaskHandle_t producerTask; // so interrupt handlers know who to notify
+extern QueueHandle_t q;
 
 class BackgroundTask {
  private:
@@ -60,5 +59,7 @@ class BackgroundTask {
 extern void setUpdateInterval(uint32_t ms);
 extern void enableUpdateTimer();
 
-extern void start(void);
+extern void start();
+
+extern void handle(); // handle all pending events
 }  // namespace Watchy_Events

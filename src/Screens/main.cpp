@@ -122,11 +122,6 @@ void setup() {
   Watchy::init();
 }
 
-unsigned long count = 0;
 void loop() {
-  if (count % 10000 == 0) {
-    log_i("%d", count);
-  }
-  count++;
-  delay(1); // give any ready tasks a chance to run...
+  Watchy_Event::handle();
 }

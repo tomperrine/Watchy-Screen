@@ -180,7 +180,10 @@ void init() {
       break;
   }
   initTask.remove();
-  // deepSleep();
+  while (Watchy_Event::BackgroundTask::running()) {
+    Watchy_Event::handle();
+  }
+  Watchy::deepSleep();
 }
 
 void deepSleep() {
