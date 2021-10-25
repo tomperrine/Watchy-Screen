@@ -33,12 +33,6 @@ void timeSyncCallback(struct timeval *tv) {
 }
 
 void syncTime(const char *timezone) {
-  if (lastSyncTimeTS < 2) {
-    log_i("lastSyncTimeTS: %lu", lastSyncTimeTS);
-    lastSyncTimeTS++;
-    Watchy::err = Watchy::RATE_LIMITED;
-    return;
-  }
   if (sntp_get_sync_status() != SNTP_SYNC_STATUS_RESET) {
     // SNTP busy
     log_i("%d", sntp_get_sync_status());
