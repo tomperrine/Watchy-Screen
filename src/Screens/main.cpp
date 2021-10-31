@@ -123,5 +123,11 @@ void setup() {
 }
 
 void loop() {
+  // should never be called, but if it is we want to know how often
+  static int count;
+  count++;
+  if (count % 10000 == 0) {
+    log_i("%d", count/10000);
+  }
   Watchy_Event::handle();
 }
