@@ -86,31 +86,34 @@ void Event::handle() {
     handlerTask.add();
     switch (id) {
       case MENU_BTN_DOWN:
+        log_i("previous bounces: %d", bounces);
         Watchy::screen->menu();
         break;
       case BACK_BTN_DOWN:
+        log_i("previous bounces: %d", bounces);
         Watchy::screen->back();
         break;
       case UP_BTN_DOWN:
+        log_i("previous bounces: %d", bounces);
         Watchy::screen->up();
         break;
       case DOWN_BTN_DOWN:
+        log_i("previous bounces: %d", bounces);
         Watchy::screen->down();
         break;
       case UPDATE_SCREEN:
         Watchy::showWatchFace(true);
         break;
       case LOCATION_UPDATE:
-        Watchy_GetLocation::currentLocation = data.loc;
+        Watchy_GetLocation::currentLocation = loc;
         break;
       case TIME_SYNC: 
       {
-        log_i("time sync: %lu %lu", data.tv.tv_sec, data.tv.tv_usec);
-        timeval *tv = &(data.tv);
+        log_i("time sync: %lu %lu", tv.tv_sec, tv.tv_usec);
         // consider using tv.tv_usec as well
-        Watchy::RTC.set(tv->tv_sec);  // set RTC
-        setTime(tv->tv_sec);          // set system time
-        settimeofday(tv, nullptr);    // set posix
+        Watchy::RTC.set(tv.tv_sec);  // set RTC
+        setTime(tv.tv_sec);          // set system time
+        settimeofday(&tv, nullptr);    // set posix
         log_i("now %ld", now());
       }; 
       break;

@@ -814,10 +814,10 @@ void getLocation() {
       const char* olsonTZ = static_cast<const char *>(responseObject["timezone"]);
       loc.timezone = getPosixTZforOlson(olsonTZ);
       if ( loc.timezone ) {
-        Watchy_Event::Event {
-          .id = Watchy_Event::LOCATION_UPDATE,
-          .micros = micros(),
-          .data = {.loc = loc},
+        Watchy_Event::Event{
+            .id = Watchy_Event::LOCATION_UPDATE,
+            .micros = micros(),
+            {.loc = loc},
         }.send();
         lastGetLocationTS = now();
         Watchy::err = Watchy::OK;

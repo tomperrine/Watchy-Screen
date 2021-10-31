@@ -24,7 +24,7 @@ void timeSyncCallback(struct timeval *tv) {
   Watchy_Event::Event{
     .id = Watchy_Event::TIME_SYNC,
     .micros = micros(),
-    .data = {.tv = *tv},
+    {.tv = *tv},
   }.send();
   sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
   lastSyncTimeTS = tv->tv_sec;

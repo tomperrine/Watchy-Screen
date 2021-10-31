@@ -47,16 +47,28 @@ void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
   switch (wakeupBit & BTN_PIN_MASK) {
     case MENU_BTN_MASK:
-      Watchy_Event::Event{.id = Watchy_Event::MENU_BTN_DOWN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::MENU_BTN_DOWN,
+          .micros = micros(),
+      }.send();
       break;
     case BACK_BTN_MASK:
-      Watchy_Event::Event{.id = Watchy_Event::BACK_BTN_DOWN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::BACK_BTN_DOWN,
+          .micros = micros(),
+      }.send();
       break;
     case UP_BTN_MASK:
-      Watchy_Event::Event{.id = Watchy_Event::UP_BTN_DOWN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::UP_BTN_DOWN,
+          .micros = micros(),
+      }.send();
       break;
     case DOWN_BTN_MASK:
-      Watchy_Event::Event{.id = Watchy_Event::DOWN_BTN_DOWN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::DOWN_BTN_DOWN,
+          .micros = micros(),
+      }.send();
       break;
     default:
       break;
@@ -100,31 +112,55 @@ const char *wakeupReasonToString(esp_sleep_wakeup_cause_t wakeup_reason) {
 uint64_t start;
 
 bool validTime(const tmElements_t &t) {
-  if (t.Second >= 60) { return false; }
-  if (t.Minute >= 60) { return false; }
-  if (t.Hour >= 24) { return false; }
-  if (t.Month > 12) { return false; }
-  if (t.Day > 31) { return false; }
-  if (t.Wday > 7) { return false; }
+  if (t.Second >= 60) {
+    return false;
+  }
+  if (t.Minute >= 60) {
+    return false;
+  }
+  if (t.Hour >= 24) {
+    return false;
+  }
+  if (t.Month > 12) {
+    return false;
+  }
+  if (t.Day > 31) {
+    return false;
+  }
+  if (t.Wday > 7) {
+    return false;
+  }
   return true;
 }
 
 bool fixTime(tmElements_t &t) {
-  if (t.Second >= 60) { t.Second = 0; }
-  if (t.Minute >= 60) { t.Minute = 0; }
-  if (t.Hour >= 24) { t.Hour = 0; }
-  if (t.Month > 12) { t.Month = 1; }
-  if (t.Day > 31) { t.Day = 1; }
-  if (t.Wday > 7) { t.Wday = 1; }
+  if (t.Second >= 60) {
+    t.Second = 0;
+  }
+  if (t.Minute >= 60) {
+    t.Minute = 0;
+  }
+  if (t.Hour >= 24) {
+    t.Hour = 0;
+  }
+  if (t.Month > 12) {
+    t.Month = 1;
+  }
+  if (t.Day > 31) {
+    t.Day = 1;
+  }
+  if (t.Wday > 7) {
+    t.Wday = 1;
+  }
   return (RTC.write(t) == 0);
 }
 
 void initTime() {
-  Wire.begin(SDA, SCL);              // init i2c
+  Wire.begin(SDA, SCL);  // init i2c
 
   // sync ESP32 clocks to RTC
   assert(RTC.read(currentTime) == 0);
-  assert(RTC.read(currentTime) == 0); // DEBUG
+  assert(RTC.read(currentTime) == 0);  // DEBUG
   assert(validTime(currentTime) || fixTime(currentTime));
   setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
   tzset();
@@ -163,12 +199,18 @@ void init() {
       time_t t = makeTime(tm);
       RTC.set(t);
 #endif
-      Watchy_Event::Event{.id = Watchy_Event::UPDATE_SCREEN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::UPDATE_SCREEN,
+          .micros = micros(),
+      }.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
       RTC.alarm(ALARM_1);        // resets the alarm flag in the RTC
       RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
-      Watchy_Event::Event{.id = Watchy_Event::UPDATE_SCREEN}.send();
+      Watchy_Event::Event{
+          .id = Watchy_Event::UPDATE_SCREEN,
+          .micros = micros(),
+      }.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT1:  // button Press
       handleButtonPress();
@@ -210,7 +252,7 @@ void _rtcConfig() {
   // INTCN: Interrupt Control
   // A2IE: Alarm 2 Interrupt Enable
   // A1IE: Alarm 1 Interrupt Enable
-  
+
   // 04 = Enable Oscillator | Enable Interrupts
   RTC.writeRTC(0x0E, 0X04);
 

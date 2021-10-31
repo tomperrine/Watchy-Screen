@@ -28,7 +28,8 @@ class Event {
   union {
     Watchy_GetLocation::location loc; // LOCATION_UPDATE
     timeval tv; // TIME_SYNC
-  } data;
+    int bounces; // BTN_DOWN
+  };
   void send();
   void handle();
 };
