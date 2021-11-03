@@ -176,6 +176,7 @@ void BackgroundTask::begin() {
     log_d("create background task result %d", res);
   }
 }
+
 void BackgroundTask::kill() {
   if (task != nullptr) {
     TaskHandle_t t = task;
