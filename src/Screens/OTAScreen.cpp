@@ -28,9 +28,6 @@ void OTAScreen::show() {
   };
 
   // Let's make sure we have WiFi.
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
