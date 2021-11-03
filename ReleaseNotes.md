@@ -11,6 +11,7 @@
 ## Breaking changes
 
 * Must call `Watchy_Event::start()` in `setup()` before calling `Watchy::init()`
+* Must call `Watchy_Event::setUpdateInterval(msecs)` in `Screen::show()`
 
 ## Asynchronous events
 
