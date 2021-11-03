@@ -41,10 +41,6 @@ void enableUpdateTimer() {
   if (err) {
     log_e("error reading DTC %d", err);
   }
-  err = Watchy::RTC.read(tm); // DEBUG
-  if (err) {
-    log_e("error reading DTC %d", err);
-  }
   // Wire.setDebugFlags(oldFlags, ~oldFlags);
   log_i("     %d %02d:%02d:%02d", tm.Wday, tm.Hour, tm.Minute, tm.Second);
   log_i("%4d %d %02d:%02d:%02d", t-time(nullptr), dayOfWeek(t), numberOfHours(t), numberOfMinutes(t), numberOfSeconds(t));

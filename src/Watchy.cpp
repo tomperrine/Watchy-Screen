@@ -160,7 +160,6 @@ void initTime() {
 
   // sync ESP32 clocks to RTC
   assert(RTC.read(currentTime) == 0);
-  assert(RTC.read(currentTime) == 0);  // DEBUG
   assert(validTime(currentTime) || fixTime(currentTime));
   setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
   tzset();
