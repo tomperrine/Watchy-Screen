@@ -8,8 +8,6 @@
 #include <freertos/queue.h>
 
 #include "Screen.h"
-#include "Watchy.h"
-#include "button_interrupt.h"
 
 namespace Watchy_Event {
 
@@ -123,12 +121,12 @@ void Event::handle() {
 
 void Event::send() {
   log_i("send event %s 0x%08x", IDtoString(id), this);
-  xQueueSendToBack(q, reinterpret_cast<void*>(this), 0);
+  xQueueSendToBack(Q(), reinterpret_cast<void*>(this), 0);
 }
 
-void handle() {
+void Event::handleAll() {
   Event e;
-  while (xQueueReceive(q, &e, 10)) {
+  while (xQueueReceive(Q(), &e, 10)) {
     e.handle();
   }
 }
@@ -167,7 +165,7 @@ void BackgroundTask::begin() {
   BaseType_t res = xTaskCreatePinnedToCore(
       [](void *p) {
         BackgroundTask *b = static_cast<BackgroundTask*>(p);
-        b->taskFunction(nullptr);
+        b->taskFunction();
         b->kill();
       },
       name, 4096, reinterpret_cast<void *>(this), tskIDLE_PRIORITY, &task, 1);
@@ -191,17 +189,5 @@ BackgroundTask::~BackgroundTask() {
   kill();
 }
 
-QueueHandle_t q;
-
-void start(void) {
-  Watchy::initTime(); // so we can use now() in rate limits
-  q = xQueueCreate(10, sizeof(Event));
-
-  buttonSetup(MENU_BTN_PIN, menu_btn);
-  buttonSetup(BACK_BTN_PIN, back_btn);
-  buttonSetup(UP_BTN_PIN, up_btn);
-  buttonSetup(DOWN_BTN_PIN, down_btn);
-  // register for RTC gpio to send screen update events during long running
-  // tasks. Figure out how to do this for ESP RTC wakeup timer too.
-}
+QueueHandle_t Event::_q;
 }  // namespace Watchy_Event

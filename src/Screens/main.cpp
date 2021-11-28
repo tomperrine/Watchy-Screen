@@ -86,13 +86,13 @@ CarouselItem carouselItems[] = {{&timeScreen, nullptr},
 CarouselScreen carousel(carouselItems,
                         sizeof(carouselItems) / sizeof(carouselItems[0]));
 
-Watchy_Event::BackgroundTask timeSync("timeSync", [](void* p) {
+Watchy_Event::BackgroundTask timeSync("timeSync", []() {
   Watchy_SyncTime::syncTime(Watchy_GetLocation::currentLocation.timezone);
 });
 
-Watchy_Event::BackgroundTask getLocation("getLocation", [](void* p) {
-  Watchy_GetLocation::getLocation();
-});
+Watchy_Event::BackgroundTask getLocation("getLocation", 
+  Watchy_GetLocation::getLocation
+);
 
 void setup() {
   Serial.begin(115200);
@@ -100,8 +100,6 @@ void setup() {
   esp_log_level_set("*", static_cast<esp_log_level_t>(CORE_DEBUG_LEVEL));
 #endif
   log_d(); // fail if debugging macros not defined
-
-  Watchy_Event::start();
 
  // initializing time and location can be a little tricky, because the
   // calls can fail for a number of reasons, but you don't want to just
@@ -129,5 +127,5 @@ void loop() {
   if (count % 10000 == 0) {
     log_i("%d", count/10000);
   }
-  Watchy_Event::handle();
+  Watchy_Event::Event::handleAll();
 }

@@ -222,7 +222,7 @@ void init() {
   }
   initTask.remove();
   do {
-    Watchy_Event::handle();
+    Watchy_Event::Event::handleAll();
   } while (Watchy_Event::BackgroundTask::running());
   Watchy::deepSleep();
 }
@@ -237,37 +237,6 @@ void deepSleep() {
   log_i("%6d *** sleeping after %llu.%03llums ***\n", millis(), elapsed / 1000,
         elapsed % 1000);
   esp_deep_sleep_start();
-}
-
-void _rtcConfig() {
-#ifndef ESP_RTC
-  // https://github.com/JChristensen/DS3232RTC
-  // OE = Control
-  // !EOSC | BBSQW | CONV | RS2 | RS1 | INTCN | A2IE | A1IE
-  // !EOSC: Enable Oscillator
-  // BBSQW: Battery-Backed Square-Wave Enable
-  // CONV: Convert Temperature
-  // RS2 | RS1: Rate Select in kHz (0 = 1, 1 = 1.024, 2 = 4.096, 3 = 8.192)
-  // INTCN: Interrupt Control
-  // A2IE: Alarm 2 Interrupt Enable
-  // A1IE: Alarm 1 Interrupt Enable
-
-  // 04 = Enable Oscillator | Enable Interrupts
-  RTC.writeRTC(0x0E, 0X04);
-
-  // OF = Control/Status
-  // OSF | BB32kHz | CRATE1 | CRATE0 | EN32kHz | BSY | A2F | A1F
-  // OSF: Oscillator Stop Flag
-  // BB32kHz: Battery-Backed 32kHz Output
-  // CRATE1 | CRATE0: Temperature Conversion Rate in Seconds (0=64, 1=128, 2=256, 3=512)
-  // EN32kHz: Enable 32kHz Output
-  // BSY: Busy
-  // A2F: Alarm 2 Flag
-  // A1F: Alarm 1 Flag
-
-  // 00 = Clear OSF, disable 32kHz, Convert every 64 secs, clear alarms
-  RTC.writeRTC(0x0F, 0X00);
-#endif
 }
 
 void showWatchFace(bool partialRefresh, Screen *s) {

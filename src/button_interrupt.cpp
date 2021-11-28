@@ -10,7 +10,7 @@
 
 static void IRAM_ATTR ISR_Send(const Watchy_Event::Event e) {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  xQueueSendToBackFromISR(Watchy_Event::q, (const void *)&e,
+  xQueueSendToBackFromISR(Watchy_Event::Event::ISR_Q(), (const void *)&e,
                           &xHigherPriorityTaskWoken);
 
   if (xHigherPriorityTaskWoken) {
