@@ -3,7 +3,6 @@
 #include <ctime>
 
 #include <WiFi.h>
-#include <RTClib.h>
 #include <esp_task.h>
 #include <esp_task_wdt.h>
 #include <freertos/queue.h>
