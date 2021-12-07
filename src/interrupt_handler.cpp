@@ -1,8 +1,11 @@
-#include "button_interrupt.h"
+#include "interrupt_handler.h"
 
 #include <freertos/queue.h>
 
 #include "Events.h"
+#include "Watchy.h"
+
+namespace WatchyInterrupts {
 
 #ifndef BUTTON_DEBOUNCE_US
 #define BUTTON_DEBOUNCE_US 150000
@@ -18,6 +21,14 @@ static void IRAM_ATTR ISR_Send(const Watchy_Event::Event e) {
   }
 }
 
+void IRAM_ATTR ISR_RTC() {
+  Watchy::RTC.clearAlarm();
+  ISR_Send(Watchy_Event::Event{
+      .id = Watchy_Event::ALARM_TIMER,
+      .micros = micros(),
+  });
+}
+
 // just use one timer for all the buttons
 static uint64_t lastIntTime = 0;
 static int bounces = 0;
@@ -30,10 +41,10 @@ void IRAM_ATTR ISR_MenuButtonPress() {
     return;
   }
   ISR_Send(Watchy_Event::Event{
-    .id = Watchy_Event::MENU_BTN_DOWN,
-    .micros = lastIntTime,
-    {.bounces = bounces},
-    });
+      .id = Watchy_Event::MENU_BTN_DOWN,
+      .micros = lastIntTime,
+      {.bounces = bounces},
+  });
 }
 
 void IRAM_ATTR ISR_BackButtonPress() {
@@ -44,10 +55,10 @@ void IRAM_ATTR ISR_BackButtonPress() {
     return;
   }
   ISR_Send(Watchy_Event::Event{
-    .id = Watchy_Event::BACK_BTN_DOWN,
-    .micros = lastIntTime,
-    {.bounces = bounces},
-    });
+      .id = Watchy_Event::BACK_BTN_DOWN,
+      .micros = lastIntTime,
+      {.bounces = bounces},
+  });
 }
 
 void IRAM_ATTR ISR_UpButtonPress() {
@@ -58,10 +69,10 @@ void IRAM_ATTR ISR_UpButtonPress() {
     return;
   }
   ISR_Send(Watchy_Event::Event{
-    .id = Watchy_Event::UP_BTN_DOWN,
-    .micros = lastIntTime,
-    {.bounces = bounces},
-    });
+      .id = Watchy_Event::UP_BTN_DOWN,
+      .micros = lastIntTime,
+      {.bounces = bounces},
+  });
 }
 
 void IRAM_ATTR ISR_DownButtonPress() {
@@ -72,10 +83,14 @@ void IRAM_ATTR ISR_DownButtonPress() {
     return;
   }
   ISR_Send(Watchy_Event::Event{
-    .id = Watchy_Event::DOWN_BTN_DOWN,
-    .micros = lastIntTime,
-    {.bounces = bounces},
-    });
+      .id = Watchy_Event::DOWN_BTN_DOWN,
+      .micros = lastIntTime,
+      {.bounces = bounces},
+  });
+}
+
+void timerSetup() {
+  attachInterrupt(RTC_PIN, ISR_RTC, GPIO_INTR_POSEDGE);
 }
 
 void buttonSetup(int pin, ButtonIndex index) {
@@ -97,3 +112,4 @@ void buttonSetup(int pin, ButtonIndex index) {
       break;
   }
 }
+}  // namespace WatchyInterrupts

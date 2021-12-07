@@ -8,7 +8,7 @@
 #include <esp_task_wdt.h>
 #include <freertos/queue.h>
 
-#include "button_interrupt.h"
+#include "interrupt_handler.h"
 #include "Screen.h"
 
 namespace Watchy_Event {
@@ -22,7 +22,7 @@ const char * IDtoString(ID id) {
     case BACK_BTN_DOWN: return "BACK_BTN_DOWN";
     case UP_BTN_DOWN: return "UP_BTN_DOWN";
     case DOWN_BTN_DOWN: return "DOWN_BTN_DOWN";
-    case UPDATE_SCREEN: return "UPDATE_SCREEN";
+    case ALARM_TIMER: return "ALARM_TIMER";
     case LOCATION_UPDATE: return "LOCATION_UPDATE";
     case TIME_SYNC: return "TIME_SYNC";
     case MAX: return "MAX";
@@ -55,7 +55,9 @@ void Event::handle() {
         log_i("previous bounces: %d", bounces);
         Watchy::screen->down();
         break;
-      case UPDATE_SCREEN:
+      case ALARM_TIMER:
+        // resets the alarm flag in the RTC
+        Watchy::RTC.clearAlarm();
         Watchy::showWatchFace(true);
         break;
       case LOCATION_UPDATE:
@@ -99,10 +101,10 @@ QueueHandle_t Event::Q() {
   }
   _q = xQueueCreate(10, sizeof(Event));
 
-  buttonSetup(MENU_BTN_PIN, menu_btn);
-  buttonSetup(BACK_BTN_PIN, back_btn);
-  buttonSetup(UP_BTN_PIN, up_btn);
-  buttonSetup(DOWN_BTN_PIN, down_btn);
+  WatchyInterrupts::buttonSetup(MENU_BTN_PIN, WatchyInterrupts::menu_btn);
+  WatchyInterrupts::buttonSetup(BACK_BTN_PIN, WatchyInterrupts::back_btn);
+  WatchyInterrupts::buttonSetup(UP_BTN_PIN, WatchyInterrupts::up_btn);
+  WatchyInterrupts::buttonSetup(DOWN_BTN_PIN, WatchyInterrupts::down_btn);
   // register for RTC gpio to send screen update events during long running
   // tasks. Figure out how to do this for ESP RTC wakeup timer too.
   return _q;

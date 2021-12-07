@@ -4,12 +4,7 @@
 #include <DS3232RTC.h>
 #include <Rtc_Pcf8563.h>
 
-#define DS3231 0
-#define PCF8563 1
-#define RTC_DS_ADDR 0x68
-#define RTC_PCF_ADDR 0x51
-#define YEAR_OFFSET_DS 1970
-#define YEAR_OFFSET_PCF 2000
+enum RTC_t { DS3231, PCF8563 };
 
 enum RTC_REFRESH_t {
   RTC_REFRESH_NONE,  // never refresh, wake on buttons only
@@ -24,7 +19,7 @@ class WatchyRTC {
     DS3232RTC rtc_ds;
     Rtc_Pcf8563 rtc_pcf;
   };
-  uint8_t rtcType;
+  RTC_t rtcType;
 
  public:
   WatchyRTC();

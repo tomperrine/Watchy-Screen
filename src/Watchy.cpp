@@ -130,14 +130,13 @@ void init() {
   switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TIMER:  // ESP Internal RTC
       Watchy_Event::Event{
-          .id = Watchy_Event::UPDATE_SCREEN,
+          .id = Watchy_Event::ALARM_TIMER,
           .micros = micros(),
       }.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
-      RTC.clearAlarm(); //resets the alarm flag in the RTC
       Watchy_Event::Event{
-          .id = Watchy_Event::UPDATE_SCREEN,
+          .id = Watchy_Event::ALARM_TIMER,
           .micros = micros(),
       }.send();
       break;

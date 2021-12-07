@@ -1,6 +1,11 @@
 #include "WatchyRTC.h"
 #include "config.h"
 
+#define RTC_DS_ADDR 0x68
+#define RTC_PCF_ADDR 0x51
+#define YEAR_OFFSET_DS 1970
+#define YEAR_OFFSET_PCF 2000
+
 RTC_DATA_ATTR RTC_REFRESH_t WatchyRTC::_refresh = RTC_REFRESH_NONE;
 
 WatchyRTC::WatchyRTC() 
@@ -29,20 +34,14 @@ void WatchyRTC::config(String datetime) {
   } else {
     _PCFConfig(datetime);
   }
+  setRefresh(RTC_REFRESH_MIN);
 }
 
 void WatchyRTC::clearAlarm() {
   if (rtcType == DS3231) {
     rtc_ds.alarm(ALARM_2);
   } else {
-    int nextAlarmMinute = 0;
     rtc_pcf.clearAlarm();  // resets the alarm flag in the RTC
-    nextAlarmMinute = rtc_pcf.getMinute();
-    nextAlarmMinute =
-        (nextAlarmMinute == 59)
-            ? 0
-            : (nextAlarmMinute + 1);  // set alarm to trigger 1 minute from now
-    rtc_pcf.setAlarm(nextAlarmMinute, 99, 99, 99);
   }
 }
 
@@ -163,9 +162,6 @@ void WatchyRTC::_DSConfig(String datetime) {
   }
   // https://github.com/JChristensen/DS3232RTC
   rtc_ds.squareWave(SQWAVE_NONE);  // disable square wave output
-  rtc_ds.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0,
-                  0);                    // alarm wakes up Watchy every minute
-  rtc_ds.alarmInterrupt(ALARM_2, true);  // enable alarm interrupt
 }
 
 void WatchyRTC::_PCFConfig(String datetime) {
@@ -182,7 +178,6 @@ void WatchyRTC::_PCFConfig(String datetime) {
     // hr, min, sec
     rtc_pcf.setTime(Hour, Minute, Second);
   }
-  clearAlarm();
 }
 
 int WatchyRTC::_getDayOfWeek(int d, int m, int y) {
