@@ -12,13 +12,12 @@ namespace Watchy {
 
 Error err;
 
-void _rtcConfig();
 uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data,
                        uint16_t len);
 uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
                         uint16_t len);
 
-DS3232RTC RTC(false);
+WatchyRTC RTC;
 GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(
   GxEPD2_154_D67(CS, DC, RESET, BUSY));
 RTC_DATA_ATTR Screen *screen = nullptr;
@@ -26,22 +25,6 @@ RTC_DATA_ATTR Screen *screen = nullptr;
 RTC_DATA_ATTR BMA423 sensor;
 RTC_DATA_ATTR bool WIFI_CONFIGURED;
 RTC_DATA_ATTR bool BLE_CONFIGURED;
-
-String getValue(String data, char separator, int index) {
-  int found = 0;
-  int strIndex[] = {0, -1};
-  int maxIndex = data.length() - 1;
-
-  for (int i = 0; i <= maxIndex && found <= index; i++) {
-    if (data.charAt(i) == separator || i == maxIndex) {
-      found++;
-      strIndex[0] = strIndex[1] + 1;
-      strIndex[1] = (i == maxIndex) ? i + 1 : i;
-    }
-  }
-
-  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
-}
 
 void handleButtonPress() {
   uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
@@ -111,62 +94,24 @@ const char *wakeupReasonToString(esp_sleep_wakeup_cause_t wakeup_reason) {
 
 uint64_t start;
 
-bool validTime(const tmElements_t &t) {
-  if (t.Second >= 60) {
-    return false;
-  }
-  if (t.Minute >= 60) {
-    return false;
-  }
-  if (t.Hour >= 24) {
-    return false;
-  }
-  if (t.Month > 12) {
-    return false;
-  }
-  if (t.Day > 31) {
-    return false;
-  }
-  if (t.Wday > 7) {
-    return false;
-  }
-  return true;
-}
-
-bool fixTime(tmElements_t &t) {
-  if (t.Second >= 60) {
-    t.Second = 0;
-  }
-  if (t.Minute >= 60) {
-    t.Minute = 0;
-  }
-  if (t.Hour >= 24) {
-    t.Hour = 0;
-  }
-  if (t.Month > 12) {
-    t.Month = 1;
-  }
-  if (t.Day > 31) {
-    t.Day = 1;
-  }
-  if (t.Wday > 7) {
-    t.Wday = 1;
-  }
-  return (RTC.write(t) == 0);
-}
-
-void initTime() {
+void initTime(String datetime) {
+  static bool done;
+  if (done) { return; }
   Wire.begin(SDA, SCL);  // init i2c
-
+  RTC.init();
   // sync ESP32 clocks to RTC
-  assert(RTC.read(currentTime) == 0);
-  assert(validTime(currentTime) || fixTime(currentTime));
+  RTC.config(datetime);
+  RTC.read(currentTime);
+  log_i("RTC Current time: %02d/%02d/%02d %02d:%02d:%02d %d", currentTime.Day,
+        currentTime.Month, currentTime.Year, currentTime.Hour,
+        currentTime.Minute, currentTime.Second, currentTime.Wday);
   setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
   tzset();
   time_t t = makeTime(currentTime);
   setTime(t);
   timeval tv = {t, 0};
   settimeofday(&tv, nullptr);
+  done = true;
 }
 
 void init() {
@@ -184,28 +129,13 @@ void init() {
 
   switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TIMER:  // ESP Internal RTC
-#ifdef ESP_RTC
-      tmElements_t currentTime;
-      RTC.read(currentTime);
-      currentTime.Minute++;
-      tmElements_t tm;
-      tm.Month = currentTime.Month;
-      tm.Day = currentTime.Day;
-      tm.Year = currentTime.Year;
-      tm.Hour = currentTime.Hour;
-      tm.Minute = currentTime.Minute;
-      tm.Second = 0;
-      time_t t = makeTime(tm);
-      RTC.set(t);
-#endif
       Watchy_Event::Event{
           .id = Watchy_Event::UPDATE_SCREEN,
           .micros = micros(),
       }.send();
       break;
     case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
-      RTC.alarm(ALARM_1);        // resets the alarm flag in the RTC
-      RTC.alarm(ALARM_2);        // resets the alarm flag in the RTC
+      RTC.clearAlarm(); //resets the alarm flag in the RTC
       Watchy_Event::Event{
           .id = Watchy_Event::UPDATE_SCREEN,
           .micros = micros(),
@@ -215,22 +145,26 @@ void init() {
       handleButtonPress();
       break;
     default:  // reset
-      _rtcConfig();
       bmaConfig();
       showWatchFace(false);  // full update on reset
       break;
   }
   initTask.remove();
-  do {
+  for (;;) {
     Watchy_Event::Event::handleAll();
-  } while (Watchy_Event::BackgroundTask::running());
+    if (!Watchy_Event::BackgroundTask::running()) {
+      if (RTC.refresh() != RTC_REFRESH_FAST) {
+        break;
+      }
+      showWatchFace(true);
+    }
+  }
   Watchy::deepSleep();
 }
 
 void deepSleep() {
   uint64_t elapsed = micros() - start;
   display.hibernate();
-  Watchy_Event::enableUpdateTimer();
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press
@@ -240,8 +174,7 @@ void deepSleep() {
 }
 
 void showWatchFace(bool partialRefresh, Screen *s) {
-  display.init(
-      0, false);  //_initial_refresh to false to prevent full update on init
+  display.init(0, false);  //_initial_refresh to false to prevent full update on init
   display.setFullWindow();
   display.setTextColor((s->bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE));
   display.setCursor(0, 0);

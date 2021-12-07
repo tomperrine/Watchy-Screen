@@ -5,7 +5,7 @@
 #include "Events.h"
 
 void ShowOrientationScreen::show() {
-  Watchy_Event::setUpdateInterval(200);
+  Watchy::RTC.setRefresh(RTC_REFRESH_FAST);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
   Accel acc;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include <FreeRTOS.h>
@@ -22,6 +23,9 @@ typedef enum {
 } ID;
 
 class Event {
+  private:
+  static QueueHandle_t _q;
+
   public:
   ID id;
   uint64_t micros;
@@ -32,20 +36,25 @@ class Event {
   };
   void send();
   void handle();
+  static void handleAll();
+  static QueueHandle_t ISR_Q() { return _q; }; // must initialize first
+  static QueueHandle_t Q();
 };
 
 extern QueueHandle_t q;
+
+typedef std::function<void()> VoidF_t;
 
 class BackgroundTask {
  private:
   static std::vector<const BackgroundTask *> tasks;
 
   const char *name;
-  const TaskFunction_t taskFunction;
+  const VoidF_t taskFunction;
   TaskHandle_t task;
 
  public:
-  BackgroundTask(const char *n, const TaskFunction_t t)
+  BackgroundTask(const char *n, const VoidF_t t)
       : name(n), taskFunction(t), task(nullptr){};
   const char *Name() const { return name; }
   void begin();
@@ -56,9 +65,6 @@ class BackgroundTask {
   void remove() const;
   static bool running();
 };
-
-extern void setUpdateInterval(uint32_t ms);
-extern void enableUpdateTimer();
 
 extern void start();
 

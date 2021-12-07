@@ -60,7 +60,7 @@ void SetTimeScreen::show() {
   revert = false;
   commit = false;
 
-  Watchy_Event::setUpdateInterval(1000);
+  Watchy::RTC.setRefresh(RTC_REFRESH_SEC);
 
   blink = 1 - blink;
   const uint16_t fgColor =
@@ -133,7 +133,9 @@ void SetTimeScreen::menu() {
   if (setIndex == numFields - 1) {
     time_t t = mktime(&tm);
     setTime(t);
-    RTC.set(t);
+    tmElements_t tme;
+    breakTime(t, tme);
+    Watchy::RTC.set(tme);
     timeval tv = {t, 0};
     settimeofday(&tv, nullptr);
     setIndex = 0;  // make sure we start at the beginning if we come back

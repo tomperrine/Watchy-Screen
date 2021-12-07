@@ -14,7 +14,7 @@ class IconScreen : public Screen {
   IconScreen(const rle *r, const char *l, const GFXfont *f, uint16_t bg = GxEPD_WHITE) : Screen(bg), rleImage(r), label(l), font(f) {}
   void show() override {
     log_i("%s", label);
-    Watchy_Event::setUpdateInterval(0); // static screen
+    Watchy::RTC.setRefresh(RTC_REFRESH_NONE); // static screen
     const uint16_t fgColor =
         (bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
     Watchy::display.setFont(font);

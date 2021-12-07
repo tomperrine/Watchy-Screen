@@ -20,7 +20,7 @@ MenuScreen::MenuScreen(MenuItem *mis, const int8_t ms, const GFXfont *f,
 
 void MenuScreen::show() {
   log_i("%s", items[index].name);
-  Watchy_Event::setUpdateInterval(0);  // static screen
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);  // static screen
   const uint16_t fgColor =
       (screen->bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
   Watchy::display.fillScreen(bgColor);

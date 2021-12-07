@@ -16,7 +16,7 @@ void _configModeCallback(WiFiManager *myWiFiManager) {
 }
 
 void SetupWifiScreen::show() {
-  Watchy_Event::setUpdateInterval(0);
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
   Watchy::display.setCursor(0, 30);

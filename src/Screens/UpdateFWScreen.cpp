@@ -16,7 +16,7 @@ class : public Screen {
 
  public:
   void show() {
-    Watchy_Event::setUpdateInterval(0);
+    Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
     BT.begin("Watchy BLE OTA");
     TickType_t ticks = xTaskGetTickCount();
     for (;;) {
@@ -85,7 +85,7 @@ class : public Screen {
 } updateFWBeginScreen;
 
 void UpdateFWScreen::show() {
-  Watchy_Event::setUpdateInterval(0);
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
   Watchy::display.println("\nVisit");

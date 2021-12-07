@@ -1,5 +1,17 @@
 # Release Notes
 
+## In this release
+
+Support for Watchy 1.5 hardware, and WatchyRTC library.
+
+Add PCF8563 library.
+Add `WATCHY_HW_VERSION` preprocessor value (`10` aka 1.0 for original watchy, `15` aka 1.5 for Dec 2021 hw)
+Change how update intervals work. Only four update intervals. Wake every minute, wake every second, don't wake on timer only buttons, don't sleep refresh as quickly as you can.
+Merge upstream Watchy changes for `WatchyRTC` library.
+Added `setAlarm`, `setRefresh`, and `refresh()` methods to `WatchyRTC` class.
+
+## Earlier versions
+
 * Asynchronous events and background tasks
 * Interrupts and Events for button presses
 * Variable screen refresh rates
@@ -11,7 +23,6 @@
 ## Breaking changes
 
 * Must call `Watchy_Event::start()` in `setup()` before calling `Watchy::init()`
-* Must call `Watchy_Event::setUpdateInterval(msecs)` in `Screen::show()`
 
 ## Asynchronous events
 
@@ -29,7 +40,11 @@ Buttons are now handled entirely using interrupts, so no more polling for button
 
 ## Variable screen refresh rates
 
-Screens can (must) say how often they want to be refreshed. In their `show()` methods by calling `Watchy_Event::setUpdateInterval(msecs)` 0 is a legal value meaning "static display, never refresh." To get the existing behaviour put `Watchy_Event::setUpdateInterval(SECS_PER_MIN*1000)` as the first line of your `Screen::show()` method. Note that screen updates take a minimum of about 300ms.
+Screens can (must) say how often they want to be refreshed. In their `show()` methods by calling `Watchy::RTC.setRefresh` possible parameters are:
+`RTC_REFRESH_NONE` never refresh, wake on buttons only;
+`RTC_REFRESH_SEC` refresh every second;
+`RTC_REFRESH_MIN` refresh every minute;
+`RTC_REFRESH_FAST` refresh as fast as possible, never sleep. To get the existing behaviour put `Watchy::RTC.setRefresh(RTC_REFRESH_MIN)` as the first line of your `Screen::show()` method.
 
 ## Change how RTC "on wake" alarms are handled
 

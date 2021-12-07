@@ -4,7 +4,7 @@
 #include "Watchy.h"
 
 void ShowBluetoothScreen::show() {
-  Watchy_Event::setUpdateInterval(0);
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd22pt7b);
   Watchy::display.printf("\nbluetooth\nis");

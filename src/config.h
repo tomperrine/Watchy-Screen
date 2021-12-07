@@ -4,10 +4,17 @@
 #define TAG "Watchy"
 #endif
 
+// hardware
+#define WATCHY_HW_VERSION 10
+
 //pins
 #define SDA 21
 #define SCL 22
+#if WATCHY_HW_VERSION == 15
+#define ADC_PIN 35
+#else
 #define ADC_PIN 33
+#endif
 #define RTC_PIN GPIO_NUM_27
 #define CS 5
 #define DC 10

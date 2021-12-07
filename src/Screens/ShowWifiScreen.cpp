@@ -4,7 +4,7 @@
 #include "Watchy.h"
 
 void ShowWifiScreen::show() {
-  Watchy_Event::setUpdateInterval(0);
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   bool connected = false;
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);

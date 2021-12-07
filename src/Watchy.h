@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Arduino.h>
-#include <DS3232RTC.h>
 #include <GxEPD2_BW.h>
 #include <HTTPClient.h>
+#include <TimeLib.h>
 #include <WiFiManager.h>
 #include <Wire.h>
 
@@ -12,16 +12,17 @@
 #include "bma.h"
 #include "config.h"
 #include "Events.h"
+#include "WatchyRTC.h"
 
 class Screen;
 
 namespace Watchy {
-extern DS3232RTC RTC;
+extern WatchyRTC RTC;
 extern GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display;
 extern tmElements_t currentTime;
 extern Screen *screen;
 void init();
-void initTime();
+void initTime(String datetime = "");
 void deepSleep();
 
 // components can register to be called whenever we wake up
@@ -35,7 +36,7 @@ extern void AddOnWakeCallback(const OnWakeCallback owc);
 bool getWiFi();
 void releaseWiFi();
 
-void showWatchFace(bool partialRefresh, Screen *s = screen);
+void showWatchFace(bool partialRefresh, Screen *s = Watchy::screen);
 void setScreen(Screen *s);
 
 // stored in RTC_DATA_ATTR

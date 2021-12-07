@@ -42,7 +42,7 @@ float mapRange(const float v, const float inMax, const float inMin,
 }
 
 void ShowBatteryScreen::show() {
-  Watchy_Event::setUpdateInterval(SECS_PER_HOUR*1000);
+  Watchy::RTC.setRefresh(RTC_REFRESH_MIN);
   float fgColor = (bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);

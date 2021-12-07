@@ -4,7 +4,7 @@
 #include "Watchy.h"
 
 void ShowStepsScreen::show() {
-  Watchy_Event::setUpdateInterval(SECS_PER_MIN*5*1000);
+  Watchy::RTC.setRefresh(RTC_REFRESH_MIN);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd22pt7b);
   Watchy::display.printf("\n%d\nsteps", Watchy::sensor.getCounter());

@@ -11,7 +11,7 @@
 
 void OTAScreen::show() {
   log_i();
-  Watchy_Event::setUpdateInterval(0);
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
   Watchy::display.println("\nWaiting for OTA");

@@ -99,9 +99,9 @@ void setup() {
 #if 0
   esp_log_level_set("*", static_cast<esp_log_level_t>(CORE_DEBUG_LEVEL));
 #endif
-  log_d(); // fail if debugging macros not defined
+  log_d("micros %ld", micros());  // fail if debugging macros not defined
 
- // initializing time and location can be a little tricky, because the
+  // initializing time and location can be a little tricky, because the
   // calls can fail for a number of reasons, but you don't want to just
   // keep trying because you can't know if the error is transient or
   // persistent. So whenever we wake up, try to sync the time and location
