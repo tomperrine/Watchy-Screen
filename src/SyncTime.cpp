@@ -21,6 +21,7 @@ QueueHandle_t q;
 // according to how the RTC represents it
 
 void timeSyncCallback(struct timeval *tv) {
+  time_t n = time(nullptr);
   Watchy_Event::Event{
     .id = Watchy_Event::TIME_SYNC,
     .micros = micros(),
@@ -28,7 +29,7 @@ void timeSyncCallback(struct timeval *tv) {
   }.send();
   sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
   lastSyncTimeTS = tv->tv_sec;
-  log_d("lastSyncTimeTS %ld", lastSyncTimeTS);
+  log_d("lastSyncTimeTS %ld delta %ld", lastSyncTimeTS, n-lastSyncTimeTS);
   xQueueSendToBack(q, nullptr, 0);
 }
 
