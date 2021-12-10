@@ -1,0 +1,58 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1" name="viewport">
+    <title>Watchy BLE Demo</title>
+</head>
+
+<body>
+    <label>SSID: <input type="text" id="ssid" name="ssid"></label><br />
+    <label>Password: <input type="password" id="password" name="password"></label><br />
+    <input type="button" value="Get" id="get" name="get">
+    <input type="button" value="Set" id="set" name="set">
+    <script>
+        const get = document.getElementById("get");
+        const set = document.getElementById("set");
+        const ssid = document.getElementById("ssid");
+        const password = document.getElementById("password");
+        const decoder = new TextDecoder('utf-8');
+        const encoder = new TextEncoder('utf-8');
+        var service;
+        get.addEventListener('click', event => {
+            navigator.bluetooth.requestDevice({ filters: [{ services: ['bc515ca2-ffe1-447b-acf0-23adba95aa97'] }] })
+                .then(device => device.gatt.connect())
+                .then(server => server.getPrimaryService('bc515ca2-ffe1-447b-acf0-23adba95aa97'))
+                .then(svc => {
+                    service = svc;
+                    service.getCharacteristic('5b2519d5-9ffd-47c7-b799-1991d9885247')
+                        .then(characteristic => characteristic.readValue()).then(value => {
+                            ssid.value = decoder.decode(value);
+                            console.log(`ssid: ${decoder.decode(value)}`);
+                        }).then(() =>
+                            service.getCharacteristic('a5d48484-e3cc-42d0-9cd7-b387c71ca200')
+                                .then(characteristic => characteristic.readValue()).then(value => {
+                                    password.value = decoder.decode(value);
+                                    console.log(`password: ${decoder.decode(value)}`);
+                                }))
+                })
+                .catch(error => { console.error(error); })
+        });
+        set.addEventListener('click', event => {
+            service.getCharacteristic('5b2519d5-9ffd-47c7-b799-1991d9885247')
+                .then(characteristic => {
+                    v = encoder.encode(ssid.value);
+                    characteristic.writeValueWithoutResponse(v);
+                })
+                .then(() =>
+                    service.getCharacteristic('a5d48484-e3cc-42d0-9cd7-b387c71ca200')
+                        .then(characteristic => {
+                            v = encoder.encode(password.value);
+                            characteristic.writeValueWithoutResponse(v);
+                        }))
+                .catch(error => { console.error(error); });
+        });
+    </script>
+</body>
+
+</html>
