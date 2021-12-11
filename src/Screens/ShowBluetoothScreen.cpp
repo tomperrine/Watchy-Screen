@@ -6,6 +6,7 @@
 
 #include "OptimaLTStd12pt7b.h"
 #include "Watchy.h"
+#include "esp_wifi.h"
 
 const BLEUUID WIFI_SERVICE_UUID("bc515ca2-ffe1-447b-acf0-23adba95aa97");
 const BLEUUID SSID_CHARACTERISTIC_UUID ("5b2519d5-9ffd-47c7-b799-1991d9885247");
