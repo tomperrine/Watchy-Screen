@@ -2,6 +2,7 @@
 
 #include "OptimaLTStd12pt7b.h"
 #include "Watchy.h"
+#include "esp_wifi.h"
 
 void ShowWifiScreen::show() {
   Watchy::RTC.setRefresh(RTC_REFRESH_NONE);

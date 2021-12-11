@@ -4,7 +4,6 @@
 #include <GxEPD2_BW.h>
 #include <HTTPClient.h>
 #include <TimeLib.h>
-#include <WiFiManager.h>
 #include <Wire.h>
 
 #include "battery.h"

@@ -7,6 +7,7 @@
 #include "Screen.h"
 #include "Sensor.h"
 #include "WatchyErrors.h"
+#include "esp_wifi.h"
 
 namespace Watchy {
 

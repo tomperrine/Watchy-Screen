@@ -1,3 +1,4 @@
+#include "BlufiScreen.h"
 #include "BuzzScreen.h"
 #include "CarouselScreen.h"
 #include "Events.h"
@@ -10,7 +11,6 @@
 #include "OTAScreen.h"
 #include "SetLocationScreen.h"
 #include "SetTimeScreen.h"
-#include "SetupWifiScreen.h"
 #include "ShowBatteryScreen.h"
 #include "ShowBluetoothScreen.h"
 #include "ShowOrientationScreen.h"
@@ -29,7 +29,7 @@
 #include <time.h>
 
 SetTimeScreen setTimeScreen;
-SetupWifiScreen setupWifiScreen;
+BlufiScreen blufiScreen;
 UpdateFWScreen updateFWScreen;
 SyncTimeScreen syncTimeScreen;
 SetLocationScreen setLocationScreen;
@@ -38,7 +38,7 @@ BuzzScreen buzzScreen;
 OTAScreen otaScreen;
 
 MenuItem menuItems[] = {{"Set Time", &setTimeScreen},
-                        {"Setup WiFi", &setupWifiScreen},
+                        {"Blufi", &blufiScreen},
                         {"Update (OTA)", &otaScreen},
                         {"Update (BLE)", &updateFWScreen},
                         {"Sync Time", &syncTimeScreen},
