@@ -2,8 +2,10 @@
 
 #include "OptimaLTStd12pt7b.h"
 #include "Watchy.h"
+#include "esp_wifi.h"
 
 void ShowWifiScreen::show() {
+  Watchy::RTC.setRefresh(RTC_REFRESH_NONE);
   bool connected = false;
   Watchy::display.fillScreen(bgColor);
   Watchy::display.setFont(OptimaLTStd12pt7b);
@@ -16,8 +18,7 @@ void ShowWifiScreen::show() {
 
     // can take up to 10 seconds to time out
     // ignore the result, we'll pick it up below
-    Watchy::connectWiFi();
-    connected = true;
+    connected = Watchy::getWiFi();
     status = WiFi.status();
   }
 
@@ -73,8 +74,6 @@ void ShowWifiScreen::show() {
   Watchy::display.printf("\nBSSID set: %d", conf.sta.bssid_set);
 
   if (connected) {
-    // turn off wifi when we're done
-    WiFi.mode(WIFI_OFF);
-    btStop();
+    Watchy::releaseWiFi();
   }
 }

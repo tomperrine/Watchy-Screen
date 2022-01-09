@@ -1,0 +1,76 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1" name="viewport">
+    <title>Watchy BLE Demo</title>
+</head>
+
+<body>
+    <label>SSID: <input type="text" id="ssid" name="ssid"></label><br />
+    <label>Password: <input type="password" id="password" name="password"></label><br />
+    <input type="button" value="Get" id="get" name="get">
+    <input type="button" value="Set" id="set" name="set">
+    <script>
+        const decoder = new TextDecoder('utf-8');
+        const encoder = new TextEncoder('utf-8');
+        var ssidChar;
+        var pwdChar;
+        async function onClick() {
+            if (typeof ssidChar !== 'undefined' && ssidChar !== null
+                && typeof pwdChar !== 'undefined' && pwdChar !== null) {
+                return;
+            }
+            try {
+                const device = await navigator.bluetooth.requestDevice(
+                    { filters: [{ services: ['bc515ca2-ffe1-447b-acf0-23adba95aa97'] }] });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('bc515ca2-ffe1-447b-acf0-23adba95aa97');
+                ssidChar = await service.getCharacteristic('5b2519d5-9ffd-47c7-b799-1991d9885247');
+                pwdChar = await service.getCharacteristic('a5d48484-e3cc-42d0-9cd7-b387c71ca200');
+            } catch (error) {
+                console.log("Error: ", error);
+            }
+        }
+        async function onClickGet() {
+            try {
+                await onClick();
+                document.querySelector("#ssid").value = decoder.decode(await ssidChar.readValue());
+                document.querySelector("#password").value = decoder.decode(await pwdChar.readValue());
+            } catch (error) {
+                console.log("Error: ", error);
+            }
+        }
+        async function onClickSet() {
+            try {
+                await onClick();
+                await ssidChar.writeValueWithoutResponse(
+                    encoder.encode(document.querySelector("#ssid").value));
+                await pwdChar.writeValueWithoutResponse(
+                    encoder.encode(document.querySelector("#password").value));
+            } catch (error) {
+                console.log("Error: ", error);
+            }
+        };
+        document.querySelector("#get").addEventListener('click', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            if (navigator.bluetooth) {
+                onClickGet();
+            } else {
+                alert("Browser does not support Web Bluetooth")
+            }
+        });
+        document.querySelector("#set").addEventListener('click', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            if (navigator.bluetooth) {
+                onClickSet();
+            } else {
+                alert("Browser does not support Web Bluetooth")
+            }
+        });
+    </script>
+</body>
+
+</html>

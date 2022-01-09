@@ -1,9 +1,20 @@
 #pragma once
 
+#ifndef TAG
+#define TAG "Watchy"
+#endif
+
+// hardware
+#define WATCHY_HW_VERSION 10
+
 //pins
 #define SDA 21
 #define SCL 22
+#if WATCHY_HW_VERSION == 15
+#define ADC_PIN 35
+#else
 #define ADC_PIN 33
+#endif
 #define RTC_PIN GPIO_NUM_27
 #define CS 5
 #define DC 10
@@ -29,6 +40,7 @@ constexpr const char * WIFI_AP_SSID = "Watchy AP";
 //set time
 const int YEAR_OFFSET = 1970;
 constexpr const char *NTP_SERVER = "pool.ntp.org";
+constexpr const char *DEFAULT_TIMEZONE = "AEST-10AEDT,M10.1.0,M4.1.0/3"; // posix format
 
 //BLE OTA
 constexpr const char * BLE_DEVICE_NAME = "Watchy BLE OTA";
@@ -40,18 +52,3 @@ const int HARDWARE_VERSION_MAJOR = 1;
 const int HARDWARE_VERSION_MINOR = 0;
 
 #include "wifi_config.h"
-
-// debugging macros defined in DEBUG releases
-#ifdef DEBUG
-#define LOGE(...) ESP_LOGE(TAG, __VA_ARGS__)
-#define LOGW(...) ESP_LOGW(TAG, __VA_ARGS__)
-#define LOGI(...) ESP_LOGI(TAG, __VA_ARGS__)
-#define LOGD(...) ESP_LOGD(TAG, __VA_ARGS__)
-#define LOGV(...) ESP_LOGV(TAG, __VA_ARGS__)
-#else
-#define LOGE(...)
-#define LOGW(...)
-#define LOGI(...)
-#define LOGD(...)
-#define LOGV(...)
-#endif

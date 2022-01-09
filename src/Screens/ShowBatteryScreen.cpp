@@ -45,6 +45,7 @@ float mapRange(const float v, const float inMax, const float inMin,
 }
 
 void ShowBatteryScreen::show() {
+  Watchy::RTC.setRefresh(RTC_REFRESH_MIN);
   float fgColor = (bgColor == GxEPD_WHITE ? GxEPD_BLACK : GxEPD_WHITE);
   float batteryPresent = Watchy::getBatteryVoltage();
   

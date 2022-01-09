@@ -29,6 +29,7 @@ void rightJustify(const char *txt, uint16_t &yPos) {
 }
 
 void TimeScreen::show() {
+  Watchy::RTC.setRefresh(RTC_REFRESH_MIN);
   tm t;
   time_t tt = now();
   localtime_r(&tt, &t);
@@ -75,4 +76,5 @@ void TimeScreen::show() {
   display.setCursor(0, 195);
   display.setFont(OptimaLTStd7pt7b);
   display.print(&t, "%a, %B %d %Y %Z");
+  loop(); // TESTING
 }
